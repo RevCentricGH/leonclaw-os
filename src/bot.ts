@@ -890,7 +890,7 @@ export function createBot(): Bot {
     if (state) waState.delete(chatIdStr);
     if (slkState) slackState.delete(chatIdStr);
     // Fire-and-forget so grammY can process /stop while agent runs
-    void handleMessage(ctx, text);
+    handleMessage(ctx, text).catch((err) => logger.error({ err }, 'Unhandled message error'));
   });
 
   // Voice messages — real transcription via Groq Whisper
@@ -918,7 +918,7 @@ export function createBot(): Bot {
       clearInterval(typingInterval);
       // Only reply with voice if explicitly requested — otherwise execute and respond in text
       const wantsVoiceBack = /\b(respond (with|via|in) voice|send (me )?(a )?voice( note| back)?|voice reply|reply (with|via) voice)\b/i.test(transcribed);
-      void handleMessage(ctx, `[Voice transcribed]: ${transcribed}`, wantsVoiceBack);
+      handleMessage(ctx, `[Voice transcribed]: ${transcribed}`, wantsVoiceBack).catch((err) => logger.error({ err }, 'Unhandled voice message error'));
     } catch (err) {
       clearInterval(typingInterval);
       logger.error({ err }, 'Voice transcription failed');
@@ -944,7 +944,7 @@ export function createBot(): Bot {
       const localPath = await downloadMedia(TELEGRAM_BOT_TOKEN, photo.file_id, 'photo.jpg');
       clearInterval(typingInterval);
       const msg = buildPhotoMessage(localPath, ctx.message.caption ?? undefined);
-      void handleMessage(ctx, msg);
+      handleMessage(ctx, msg).catch((err) => logger.error({ err }, 'Unhandled photo message error'));
     } catch (err) {
       clearInterval(typingInterval);
       logger.error({ err }, 'Photo download failed');
@@ -971,7 +971,7 @@ export function createBot(): Bot {
       const localPath = await downloadMedia(TELEGRAM_BOT_TOKEN, doc.file_id, filename);
       clearInterval(typingInterval);
       const msg = buildDocumentMessage(localPath, filename, ctx.message.caption ?? undefined);
-      void handleMessage(ctx, msg);
+      handleMessage(ctx, msg).catch((err) => logger.error({ err }, 'Unhandled document message error'));
     } catch (err) {
       clearInterval(typingInterval);
       logger.error({ err }, 'Document download failed');
@@ -996,7 +996,7 @@ export function createBot(): Bot {
       const localPath = await downloadMedia(TELEGRAM_BOT_TOKEN, video.file_id, filename);
       clearInterval(typingInterval);
       const msg = buildVideoMessage(localPath, ctx.message.caption ?? undefined);
-      void handleMessage(ctx, msg);
+      handleMessage(ctx, msg).catch((err) => logger.error({ err }, 'Unhandled video message error'));
     } catch (err) {
       clearInterval(typingInterval);
       logger.error({ err }, 'Video download failed');
@@ -1021,7 +1021,7 @@ export function createBot(): Bot {
       const localPath = await downloadMedia(TELEGRAM_BOT_TOKEN, videoNote.file_id, filename);
       clearInterval(typingInterval);
       const msg = buildVideoMessage(localPath, undefined);
-      void handleMessage(ctx, msg);
+      handleMessage(ctx, msg).catch((err) => logger.error({ err }, 'Unhandled video note message error'));
     } catch (err) {
       clearInterval(typingInterval);
       logger.error({ err }, 'Video note download failed');

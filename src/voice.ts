@@ -11,6 +11,19 @@ import { readEnvFile } from './env.js';
 
 const execFileAsync = promisify(execFile);
 
+// Cache ffmpeg availability check (only needs to run once)
+let _ffmpegAvailable: boolean | null = null;
+async function hasFfmpeg(): Promise<boolean> {
+  if (_ffmpegAvailable !== null) return _ffmpegAvailable;
+  try {
+    await execFileAsync('ffmpeg', ['-version']);
+    _ffmpegAvailable = true;
+  } catch {
+    _ffmpegAvailable = false;
+  }
+  return _ffmpegAvailable;
+}
+
 // ── Upload directory ────────────────────────────────────────────────────────
 
 export const UPLOADS_DIR = path.resolve(
@@ -290,6 +303,9 @@ async function synthesizeSpeechGradium(text: string): Promise<Buffer> {
 export async function synthesizeSpeechLocal(text: string): Promise<Buffer> {
   if (process.platform !== 'darwin') {
     throw new Error('Local TTS only available on macOS');
+  }
+  if (!(await hasFfmpeg())) {
+    throw new Error('ffmpeg not installed — required for local TTS');
   }
 
   const env = readEnvFile(['TTS_VOICE']);
