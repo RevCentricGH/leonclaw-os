@@ -229,7 +229,8 @@ With just `TELEGRAM_BOT_TOKEN` and `ALLOWED_CHAT_ID`:
 | All your skills | ✅ | Every skill in `~/.claude/skills/` auto-loads |
 | WhatsApp (`/wa`) | ✅ | No API key, but needs the wa-daemon running |
 | Voice input | ❌ | Needs `GROQ_API_KEY` |
-| Voice output | ❌ | Needs `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` |
+| Voice output (macOS) | ✅ | Uses `say` + ffmpeg locally — no API key needed |
+| Voice output (cloud) | ❌ | ElevenLabs or Gradium API key for higher quality |
 | Video analysis | ❌ | Needs `GOOGLE_API_KEY` + `gemini-api-dev` skill |
 
 ---
@@ -273,12 +274,15 @@ stability: 0.5        (higher = more consistent but robotic)
 similarity_boost: 0.75  (higher = closer to you but can distort)
 ```
 
-| Alternative | Cost | Notes |
-|-------------|------|-------|
-| **ElevenLabs** (default) | Free tier + paid | Best cloning quality |
-| OpenAI TTS | ~$0.015/1k chars | Good quality, no cloning |
-| Google Cloud TTS | Free tier | More robotic |
-| Coqui TTS | Free, open source | Run locally — needs code change |
+| Provider | Cost | Notes |
+|----------|------|-------|
+| **ElevenLabs** (primary) | Free tier + paid | Best cloning quality |
+| **Gradium AI** (built-in alternative) | Free tier (45k credits/mo) | Add `GRADIUM_API_KEY` + `GRADIUM_VOICE_ID` to `.env` |
+| **macOS say + ffmpeg** (built-in fallback) | Free | No API key — works offline. Set `TTS_VOICE` in `.env` to change voice |
+| OpenAI TTS | ~$0.015/1k chars | Good quality, no cloning — needs code change |
+| Google Cloud TTS | Free tier | More robotic — needs code change |
+
+The TTS cascade tries ElevenLabs first, falls back to Gradium, then to macOS `say`. Configure whichever providers you want — even just the local fallback works fine.
 
 ---
 
@@ -324,7 +328,13 @@ To get a voice reply back from a specific voice note, say one of these anywhere 
 
 To toggle voice replies on permanently for all messages, send `/voice`. Send it again to turn it off. Resets on restart.
 
-If ElevenLabs fails for any reason, it falls back to text automatically.
+Voice output uses a cascade of TTS providers. If the first one fails, it tries the next:
+
+1. **ElevenLabs** (primary) — best quality, voice cloning
+2. **Gradium AI** (alternative) — free tier with 45k credits/month
+3. **macOS `say` + ffmpeg** (local fallback) — no API key needed, works offline on Mac
+
+If all TTS providers fail, it falls back to text automatically.
 
 ### Voice pipeline
 
@@ -336,7 +346,8 @@ Voice note sent
 Groq Whisper → transcribed text
   ↓
 Check for voice-back trigger phrases
-  ├── found → Claude runs → ElevenLabs TTS → audio reply
+  ├── found → Claude runs → TTS cascade → audio reply
+  │                         (ElevenLabs → Gradium → macOS say)
   └── not found → Claude runs → text reply
 ```
 
@@ -379,15 +390,20 @@ Every skill in `~/.claude/skills/` loads on every session. Call them directly (`
 | Command | What it does |
 |---------|-------------|
 | `/start` | Confirm the bot is online |
+| `/help` | List all available commands |
 | `/chatid` | Get your Telegram chat ID |
 | `/newchat` | Start a fresh Claude Code session |
 | `/respin` | After `/newchat`, pull the last 20 conversation turns back as context |
 | `/voice` | Toggle voice response mode on/off |
+| `/model` | Switch Claude model — `/model haiku`, `/model sonnet`, `/model opus` (default). Resets on restart |
+| `/stop` | Cancel the current agent query mid-execution |
 | `/memory` | Show recent memories for this chat |
 | `/forget` | Clear current session |
 | `/wa` | Open the WhatsApp interface |
 | `/slack` | Open the Slack interface |
 | `/dashboard` | Get a link to the live web dashboard |
+
+All commands are registered in Telegram's command menu, so you'll see autocomplete suggestions when you type `/`.
 
 Any other `/command` passes through to Claude and routes to the matching skill.
 
@@ -445,8 +461,10 @@ By default, this web page only works on the same computer running the bot. If yo
 |-------|-------------------|
 | **Scheduled Tasks** | Every task you've set up. Shows whether it's running or paused, when it will run next (with a live countdown), and what happened last time it ran. Tap a task to expand the details. |
 | **Memory Landscape** | How many things your assistant remembers, broken down by type. Tap the numbers to browse individual memories. Shows which memories are fading (used less often) and which ones come up the most. Includes a chart of how many new memories were created over the past month. |
-| **System Health** | A visual meter showing how full the conversation window is (green = plenty of room, yellow = getting full, red = almost out). Also shows how long the current session has been running, and whether WhatsApp and Slack are connected. |
+| **System Health** | A visual meter showing how full the conversation window is (green = plenty of room, yellow = getting full, red = almost out). Also shows how long the current session has been running, whether Telegram, WhatsApp and Slack are connected, and the bot's username. |
 | **Tokens & Cost** | How much you've spent today and all-time. A chart showing daily costs over the past month. A donut chart showing how efficiently the system is using cached data (higher = cheaper). |
+
+The dashboard also has a **live chat overlay** — a floating chat button that opens a real-time conversation panel. You can send messages to Claude directly from the dashboard and see responses stream in via SSE (Server-Sent Events). It shows tool progress in real time (e.g. "Reading file", "Running command") and has a stop button to abort queries mid-execution. Messages sent from the dashboard are also relayed to your Telegram chat.
 
 On your phone it's a single scrollable page. On a computer it splits into two columns automatically.
 
@@ -614,6 +632,11 @@ All endpoints require `?token=YOUR_TOKEN`. Per-user endpoints also need `&chatId
 | `GET /api/memories/list?chatId=&sector=&limit=&offset=` | Paginated memory drill-down |
 | `GET /api/health?chatId=` | Context gauge, session stats, connections |
 | `GET /api/tokens?chatId=` | Cost stats, 30-day timeline, cache rate |
+| `GET /api/info` | Bot name, username, PID |
+| `GET /api/chat/stream` | SSE stream for real-time chat events (user messages, assistant responses, tool progress) |
+| `GET /api/chat/history?chatId=&limit=&beforeId=` | Paginated conversation history |
+| `POST /api/chat/send` | Send a message from the dashboard (`{"message": "..."}`) |
+| `POST /api/chat/abort` | Abort the current agent query |
 
 </details>
 
