@@ -1491,7 +1491,6 @@ Or view it in the dashboard via the API: `GET /api/audit?limit=50`.
 **"I asked Claude to build the dashboard and it only made the TypeScript file"**
 Claude sometimes tries to recreate `dashboard-html.ts` from scratch instead of using the one already in the repo. The dashboard is already fully built with all panels, charts, modals, and features. All Claude needs to do is configure and compile. Give it this prompt:
 
-If starting fresh:
 ```
 Read the CLAUDE.md in this repo first. Then follow the "Building and Running This Project"
 section exactly. Do NOT rewrite or recreate any source files. The Mission Control dashboard
@@ -1502,21 +1501,6 @@ Run: npm install && npm run setup && npm run build && npm start
 The setup wizard will ask me for my Telegram bot token, chat ID, and which features I want.
 Walk me through each prompt. After setup, verify the dashboard is running by curling
 http://localhost:3141 with the generated token.
-```
-
-If you already have a build and just need to pull in the full dashboard:
-```
-Read the CLAUDE.md in this repo first. Do NOT rewrite or recreate any source files.
-The Mission Control dashboard and all backend routes are already complete in
-src/dashboard-html.ts and src/dashboard.ts.
-
-Pull the latest changes, rebuild, and restart:
-git pull origin main && npm install && npm run build && npm start
-
-If .env already exists and has DASHBOARD_TOKEN set, the dashboard should come up on
-http://localhost:3141. Verify by curling it with the token. If features like auto-assign
-or memory consolidation are missing, check that GOOGLE_API_KEY is set in .env
-(free at https://aistudio.google.com).
 ```
 
 **"Do I need the mega prompt / Rebuild_Prompt.md?"**
