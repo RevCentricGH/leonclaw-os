@@ -199,8 +199,21 @@ Create the file first, then include the marker. Telegram caps attachments at 50 
 
 ## Memory
 
-Context carries across messages via Claude Code session resumption.
-You don't need to re-introduce yourself each time.
+Two systems persist across conversations:
+
+1. **Session context**: Claude Code session resumption keeps the current conversation alive between messages.
+2. **Persistent memory database**: SQLite at `store/claudeclaw.db` stores extracted memories and the full conversation log. The bot injects relevant slices as `[Memory context]` and (when the user references past exchanges) `[Conversation history recall]` blocks at the top of each prompt.
+
+If [YOUR NAME] asks "do you remember X" or references past conversations, check:
+- The `[Memory context]` / `[Conversation history recall]` blocks already in your prompt
+- The database directly, scoped to the main agent:
+
+```bash
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+sqlite3 "$PROJECT_ROOT/store/claudeclaw.db" "SELECT role, substr(content, 1, 200) FROM conversation_log WHERE agent_id = 'main' AND content LIKE '%keyword%' ORDER BY created_at DESC LIMIT 10;"
+```
+
+Never say "I don't remember" or "each session starts fresh" without checking these sources first.
 
 ---
 
