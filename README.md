@@ -14,7 +14,7 @@
 ### Getting Started
 
 ```bash
-git clone https://github.com/kevint-dot/leonclaw-os.git
+git clone https://github.com/RevCentricGH/leonclaw-os.git
 cd leonclaw-os
 npm install
 npm run setup
@@ -104,7 +104,7 @@ Keep this token handy for the next step.
 ### Step 3: Clone and install
 
 ```bash
-git clone https://github.com/kevint-dot/leonclaw-os.git
+git clone https://github.com/RevCentricGH/leonclaw-os.git
 cd leonclaw-os
 npm install
 ```
