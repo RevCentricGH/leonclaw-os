@@ -20,7 +20,7 @@ Script: `~/.claude/skills/search-x/search_x.py`
 ### Basic keyword search
 
 ```bash
-CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "cold email deliverability 2025"
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "AI agents 2025"
 ```
 
 Returns: Grok's synthesized summary of relevant X posts with citations (tweet URLs).
@@ -28,11 +28,11 @@ Returns: Grok's synthesized summary of relevant X posts with citations (tweet UR
 ### Search posts from specific handle(s)
 
 ```bash
-CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "deliverability infrastructure sender names" --handles THArrowOfApollo
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "startup fundraising advice" --handles paulg
 ```
 
 ```bash
-CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "cold email copy framework" --handles THArrowOfApollo EricNowoslawski coldemailwizard
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "product strategy" --handles naval sama pmarca
 ```
 
 Notes:
@@ -43,13 +43,13 @@ Notes:
 ### Search with date range
 
 ```bash
-CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "Q4 2024 playbook deliverability" --handles THArrowOfApollo --from 2024-10-01 --to 2025-01-01
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "AI trends Q4 2024" --handles sama --from 2024-10-01 --to 2025-01-01
 ```
 
 ### Use deeper reasoning model
 
 ```bash
-CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "explain the domain infrastructure strategy" --handles THArrowOfApollo --model grok-4.20-reasoning
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "explain their framework" --handles naval --model grok-4.20-reasoning
 ```
 
 Use `--model grok-4.20-reasoning` when you need synthesis across many threads, not just retrieval. Costs more.
@@ -57,7 +57,7 @@ Use `--model grok-4.20-reasoning` when you need synthesis across many threads, n
 ### JSON output (for piping to capture)
 
 ```bash
-CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "deliverability" --handles THArrowOfApollo --json
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "AI agents" --handles sama --json
 ```
 
 Returns: `{"content": "...", "citations": [{"url": "...", "title": "..."}]}`
@@ -74,9 +74,9 @@ Returns: `{"content": "...", "citations": [{"url": "...", "title": "..."}]}`
 ### Piping to research-capture
 
 ```bash
-CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "Q4 2024 playbook" --handles THArrowOfApollo > /tmp/x_results.txt
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.claude/skills/search-x/search_x.py "AI agents 2025" --handles sama > /tmp/x_results.txt
 cd $CLAUDECLAW_DIR && export $(grep -v '^#' .env | grep -v 'USER_NAMES' | xargs) 2>/dev/null
-~/.venv/bin/python3 ~/.claude/skills/research-capture/capture.py "https://x.com/THArrowOfApollo" --content-file /tmp/x_results.txt --no-links
+~/.venv/bin/python3 ~/.claude/skills/research-capture/capture.py "https://x.com/sama" --content-file /tmp/x_results.txt --no-links
 ```
 
 ## Error Handling
@@ -92,7 +92,7 @@ cd $CLAUDECLAW_DIR && export $(grep -v '^#' .env | grep -v 'USER_NAMES' | xargs)
 Known failure points. Read these before debugging a search issue.
 
 **Query construction:**
-- Handles must NOT include @ prefix. "THArrowOfApollo" not "@THArrowOfApollo".
+- Handles must NOT include @ prefix. "naval" not "@naval".
 - Max 10 handles per query. More than 10 = silent truncation or 400 error.
 - Date format is strictly YYYY-MM-DD. Other formats = 400 error.
 - Very short queries (1-2 generic words) return noisy results. Add context words or use --handles to constrain.

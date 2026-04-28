@@ -93,9 +93,9 @@ def check_claude_md(system_mtimes: list[float]) -> dict:
 
     try:
         content = CLAUDE_MD.read_text()
-        if "leonclaw" in content.lower():
+        if "[wrong-project-name]" in content.lower():
             score -= 15
-            alerts.append("contains 'leonclaw' references")
+            alerts.append("contains wrong project name references")
         if "### `checkpoint`" in content:
             score -= 10
             alerts.append("still has removed checkpoint command")
@@ -119,9 +119,9 @@ def check_memory_system_md(system_mtimes: list[float]) -> dict:
 
     try:
         content = MEMORY_SYSTEM_MD.read_text()
-        if "leonclaw" in content.lower():
+        if "[wrong-project-name]" in content.lower():
             score -= 10
-            alerts.append("contains 'leonclaw' references")
+            alerts.append("contains wrong project name references")
         for line in content.splitlines():
             if line.startswith("date_updated:"):
                 date_str = line.split(":", 1)[1].strip()
@@ -153,12 +153,12 @@ def check_patterns_md(system_mtimes: list[float]) -> dict:
 
     try:
         content = PATTERNS_MD.read_text()
-        if "leonclaw" in content.lower() and "subjects:" in content.lower():
+        if "[wrong-project-name]" in content.lower() and "subjects:" in content.lower():
             # Check if it's in the subjects frontmatter (bad) vs just referenced in examples (ok)
             for line in content.splitlines():
-                if line.startswith("subjects:") and "leonclaw" in line:
+                if line.startswith("subjects:") and "[wrong-project-name]" in line:
                     score -= 10
-                    alerts.append("'leonclaw' in frontmatter subjects")
+                    alerts.append("wrong project name in frontmatter subjects")
                     break
         entry_count = content.count("\n---\n")
         notes.append(f"{entry_count} entries")

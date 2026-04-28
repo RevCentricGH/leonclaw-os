@@ -1,7 +1,6 @@
 ---
 name: content-engine
-description: Create platform-native content for X, LinkedIn, YouTube, newsletters, and multi-platform repurposing campaigns. Use when the user or RC needs social posts, threads, scripts, content calendars, or one source asset adapted across platforms.
-origin: ECC (adapted for RC/LeonClaw)
+description: Create platform-native content for X, LinkedIn, YouTube, newsletters, and multi-platform repurposing campaigns. Use when the user needs social posts, threads, scripts, content calendars, or one source asset adapted across platforms.
 ---
 
 # Content Engine
@@ -15,7 +14,6 @@ Turn one idea into strong, platform-native content instead of posting the same t
 - scripting short-form video or YouTube explainers
 - repurposing articles, podcasts, demos, or docs into social content
 - building a lightweight content plan around a launch, milestone, or theme
-- RC client social and written content deliverables (AI agency, SaaS, etc.)
 
 NOT triggered by: "make a deck", "create slides", "build a presentation" — those go to google-slides. This skill is for social copy, scripts, and written content only.
 
@@ -26,7 +24,7 @@ Clarify:
 - audience: builders, investors, customers, operators, SDRs
 - platform: X, LinkedIn, TikTok, YouTube, newsletter, or multi-platform
 - goal: awareness, conversion, recruiting, authority, launch support, or engagement
-- voice/brand: the user's personal brand, RC brand, or a specific client
+- voice/brand: the user's personal brand or a specific client/company
 
 ## Core Rules
 
@@ -81,8 +79,3 @@ Return:
 - optional CTA variants
 - any missing inputs needed before publishing
 
-## RC Context
-
-- RC brand voice: direct, execution-oriented, no fluff
-- the user's brand: operator/builder, AI systems, GTM intersection
-- Phase 2 use cases: content for RC clients, Hunter's outbound, LeonClaw product marketing

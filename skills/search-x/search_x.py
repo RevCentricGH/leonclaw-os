@@ -2,9 +2,9 @@
 """
 search_x.py — Search X (Twitter) via xAI Grok X Search API
 Usage:
-    python3 search_x.py "cold email deliverability tips"
-    python3 search_x.py "deliverability infrastructure" --handles THArrowOfApollo
-    python3 search_x.py "latest threads" --handles THArrowOfApollo EricNowoslawski --from 2025-01-01
+    python3 search_x.py "AI agents 2025"
+    python3 search_x.py "startup advice" --handles paulg
+    python3 search_x.py "latest threads" --handles naval sama --from 2025-01-01
 """
 import argparse
 import json

@@ -1,6 +1,6 @@
 ---
 name: google-drive
-description: Manage Google Drive and Google Docs from Claude Code. Use for any Drive operation (list, search, read, download, upload, audit) OR any Docs operation (read, edit, append, find-replace, create, tabs). Triggers on: "read the doc", "update the doc", "append to", "find and replace", "create a new doc", Google Doc by name or ID, RC roadmap, 2nd Brain, Pitch doc, Drive files, folders, upload, search Drive, knowledge base. NOT for Google Slides operations — use google-slides for any presentation or deck work.
+description: Manage Google Drive and Google Docs from Claude Code. Use for any Drive operation (list, search, read, download, upload, audit) OR any Docs operation (read, edit, append, find-replace, create, tabs). Triggers on: "read the doc", "update the doc", "append to", "find and replace", "create a new doc", Google Doc by name or ID, Drive files, folders, upload, search Drive, knowledge base. NOT for Google Slides operations — use google-slides for any presentation or deck work.
 allowed-tools: Bash(CLAUDECLAW_DIR=* ~/.venv/bin/python3 ~/.config/gdrive/gdrive.py *), Bash(CLAUDECLAW_DIR=* ~/.venv/bin/python3 ~/.config/gdocs/gdocs.py *)
 ---
 
@@ -61,7 +61,7 @@ The Python client library does NOT support tab operations. Use raw REST with a r
 
 ```python
 import sys, requests
-sys.path.insert(0, '/Users/kevintran/.config/gdocs')
+sys.path.insert(0, os.path.expanduser('~/.config/gdocs'))
 import gdocs
 from google.auth.transport.requests import Request as GoogleRequest
 
@@ -359,7 +359,7 @@ The gdrive.py CLI does NOT pass `supportsAllDrives=True`. Any delete or move on 
 
 ```python
 import sys
-sys.path.insert(0, '/Users/kevintran/.config/gdocs')
+sys.path.insert(0, os.path.expanduser('~/.config/gdocs'))
 import gdocs
 from google.auth.transport.requests import Request as GoogleRequest
 from googleapiclient.discovery import build
@@ -406,20 +406,15 @@ drive_service.files().create(
 
 ---
 
-## RC Key Folder IDs
+## Key Folder / Doc IDs
 
-- RC Shared Drive root: `0AC9WL3KwWiExUk9PVA`
-- RC Clients folder: `1rVwtXGVhT01D8f7rtHEHfiav-wNQYXvM`
-- Workstreet: `1VaD275c3eKwyYcUMm0hXkYeF63Ki37iP`
-- Crux: `10KFfmDYNyennnasTDqi9dehqJnss8ojM`
-- mZero: `1T0ccsTCKj-xhWBmslWBEnNnsav3uUzEl`
-- Shortloop: `1_-KKIVbr4IqVIiGyFi7VQjxdf97gfD3Z`
-- Cekura: `1_FQXxppNKY9lxwr4xfuY684DHEIFH1pW`
+Add your frequently used Drive folder and doc IDs here for quick reference:
 
-## RC Key Doc IDs
+<!-- Example:
+- My Shared Drive root: `<folder_id>`
+- Projects folder: `<folder_id>`
+- Company Roadmap doc: `<doc_id>`
+-->
 
-- Workstreet Single Point of Truth: `1Jx5TtazSdM_liZLfYMi8MXy4UXUiJh-UuqcZo9yu6MU`
-- Workstreet General Vanta Screenplay: `15oGOj47oxeJGpepKgbfZTqCw9Wm3HwymYSSGGs5VgDk`
-- Workstreet Trust Center Screenplay: `1WeNKZT1NF-h601kobou7E8LmNix5Qq0KvfoEzqgQoLg`
-- Crux Screenplay: `1-Jj3i9fi3nmbMYK3Vx1kqy2n5gDOwL3KZXdZenN2IrE`
-- RC Roadmap (single source of truth): `14z5DVb-NDawyfmcVPYf7wfAdV094078U2pJqqR7wY_o`
+Doc IDs are in the URL: `docs.google.com/document/d/<DOC_ID>/edit`
+Folder IDs are in the URL: `drive.google.com/drive/folders/<FOLDER_ID>`

@@ -14,7 +14,7 @@ Create, populate, and manage Google Slides presentations directly from Claude Co
 Every command MUST use this prefix:
 
 ```
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel)
 ```
 
 Token path: `~/.config/gslides/token.json` (separate from Drive token)
@@ -25,37 +25,37 @@ Credentials: shared with Gmail/Drive at `~/.config/gmail/credentials.json`
 ### Authenticate (run once after setup)
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py auth
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py auth
 ```
 
 ### Create a presentation
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py create "Presentation Title"
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py create "Presentation Title"
 # Returns: {"id": "...", "title": "...", "url": "..."}
 
 # Save into a specific Drive folder:
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py create "Title" --folder <folder_id>
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py create "Title" --folder <folder_id>
 ```
 
 ### Get presentation metadata (slide IDs, dimensions)
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py get <presentation_id>
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py get <presentation_id>
 # Returns: id, title, slide_count, slide_ids[], width_pt, height_pt
 ```
 
 ### List slides
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py list-slides <presentation_id>
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py list-slides <presentation_id>
 # Returns: [{index, slide_id, element_count}]
 ```
 
 ### Add a slide
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py add-slide <presentation_id> --layout blank
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py add-slide <presentation_id> --layout blank
 # Layouts: blank, title, title_body, title_two_col, section, caption
 # Returns: {"slide_id": "...", "layout": "..."}
 ```
@@ -63,7 +63,7 @@ CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/g
 ### Add a text box to a slide
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py add-text <presentation_id> <slide_id> "Text content" \
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py add-text <presentation_id> <slide_id> "Text content" \
   --x 50 --y 50 --width 620 --height 100 \
   --font-size 32 --bold \
   --color 255,255,255
@@ -81,19 +81,19 @@ Common layouts:
 ### Set slide background color
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py set-background <presentation_id> <slide_id> --color 30,30,30
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py set-background <presentation_id> <slide_id> --color 30,30,30
 ```
 
 ### Delete a slide
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py delete-slide <presentation_id> <slide_id>
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py delete-slide <presentation_id> <slide_id>
 ```
 
 ### Open presentation in browser
 
 ```bash
-CLAUDECLAW_DIR=/Users/kevintran/leonclaw ~/.venv/bin/python3 ~/.config/gslides/gslides.py open <presentation_id>
+CLAUDECLAW_DIR=$(git rev-parse --show-toplevel) ~/.venv/bin/python3 ~/.config/gslides/gslides.py open <presentation_id>
 ```
 
 ## Workflow: Build a Deck from an ASCII Wireframe

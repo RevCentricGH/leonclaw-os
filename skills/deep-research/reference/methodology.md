@@ -118,7 +118,7 @@ Choose ONE search approach per research session:
 For topics where community discussion matters (trends, tools, strategies, people, products) — run last30days in parallel alongside the web searches above:
 
 ```bash
-SKILL_ROOT=~/.claude/skills/last30days /Users/kevintran/.venv313/bin/python3 ~/.claude/skills/last30days/scripts/last30days.py "TOPIC" --emit md 2>/dev/null
+SKILL_ROOT=~/.claude/skills/last30days ~/.venv/bin/python3 ~/.claude/skills/last30days/scripts/last30days.py "TOPIC" --emit md 2>/dev/null
 ```
 
 This surfaces Reddit threads, X takes, HN discussion, and Polymarket odds scored by actual engagement — things that don't show up in web search indices. Skip for purely academic or historical topics where community signal is noise.
