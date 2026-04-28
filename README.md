@@ -12,8 +12,8 @@ Built on [ClaudeClaw OS](https://github.com/earlyaidopters/claudeclaw-os). Maver
 ### Install
 
 ```bash
-git clone https://github.com/kevint-dot/hunter-os.git
-cd hunter-os
+git clone https://github.com/kevint-dot/leonclaw-os.git
+cd leonclaw-os
 npm install
 npm run setup
 ```
