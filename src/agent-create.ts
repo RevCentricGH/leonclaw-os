@@ -361,7 +361,7 @@ function generateSystemdUnit(agentId: string): string {
   const nodePath = process.execPath;
 
   const unit = `[Unit]
-Description=ClaudeClaw Agent: ${agentId}
+Description=LeonClaw OS Agent: ${agentId}
 After=network.target
 
 [Service]
@@ -554,7 +554,7 @@ export function deleteAgent(agentId: string): { ok: boolean; error?: string } {
 export function suggestBotNames(agentId: string): { displayName: string; username: string } {
   const label = agentId.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   return {
-    displayName: `ClaudeClaw ${label}`,
+    displayName: `LeonClaw OS ${label}`,
     username: `claudeclaw_${agentId.replace(/-/g, '_')}_bot`,
   };
 }

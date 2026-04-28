@@ -192,7 +192,7 @@ describe('file sending: real Telegram API', () => {
   let tmpFile: string;
 
   beforeEach(() => {
-    tmpFile = createTempFile('claudeclaw-test.txt', `ClaudeClaw file send test\nTimestamp: ${new Date().toISOString()}\nThis file was sent by an automated integration test.`);
+    tmpFile = createTempFile('claudeclaw-test.txt', `LeonClaw OS file send test\nTimestamp: ${new Date().toISOString()}\nThis file was sent by an automated integration test.`);
   });
 
   afterEach(() => {

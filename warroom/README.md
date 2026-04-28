@@ -1,6 +1,6 @@
-# War Room - ClaudeClaw Voice Meeting Server
+# War Room - LeonClaw Voice Meeting Server
 
-Real-time voice conversations with ClaudeClaw's AI agents. Each agent has a distinct voice. You speak, the right agent responds.
+Real-time voice conversations with LeonClaw's AI agents. Each agent has a distinct voice. You speak, the right agent responds.
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ Real-time voice conversations with ClaudeClaw's AI agents. Each agent has a dist
 - A Daily.co account (for WebRTC rooms)
 - A Deepgram account (for speech-to-text)
 - A Cartesia account (for text-to-speech)
-- The ClaudeClaw Node.js project built (`npm run build`)
+- The LeonClaw Node.js project built (`npm run build`)
 
 ## Setup
 
@@ -51,7 +51,7 @@ Microphone -> Daily WebRTC -> Deepgram STT -> Agent Router -> Claude Agent Bridg
 ```
 
 - **Agent Router** detects which agent you're addressing by name prefix ("Research, look into X") or broadcasts to all agents ("everyone, status update").
-- **Claude Agent Bridge** calls the ClaudeClaw agent via `agent-voice-bridge.js` and switches the TTS voice to match the responding agent.
+- **Claude Agent Bridge** calls the LeonClaw agent via `agent-voice-bridge.js` and switches the TTS voice to match the responding agent.
 
 ## Voice Routing
 
@@ -89,4 +89,4 @@ Installing `pipecat-ai[silero]` on Intel Mac (x86_64) currently fails because th
 - Skip the `silero` extra and run without voice-activity detection (edit `requirements.txt` to drop `silero`), or
 - Install an older Python (3.11) that still has compatible llvmlite wheels.
 
-Track progress or suggest alternatives in [issue #10](https://github.com/earlyaidopters/claudeclaw-os/issues/10).
+Track progress or suggest alternatives in [issue #10](https://github.com/kevint-dot/leonclaw-os/issues/10).

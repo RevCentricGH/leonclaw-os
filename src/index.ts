@@ -84,7 +84,7 @@ function showBanner(): void {
     const banner = fs.readFileSync(bannerPath, 'utf-8');
     console.log('\n' + banner);
   } catch {
-    console.log('\n  ClaudeClaw\n');
+    console.log('\n  LeonClaw OS\n');
   }
 }
 
@@ -378,20 +378,20 @@ async function main(): Promise<void> {
   process.on('SIGINT', () => void shutdown());
   process.on('SIGTERM', () => void shutdown());
 
-  logger.info({ agentId: AGENT_ID, messenger: MESSENGER_TYPE }, 'Starting ClaudeClaw...');
+  logger.info({ agentId: AGENT_ID, messenger: MESSENGER_TYPE }, 'Starting LeonClaw OS...');
 
   if (useSignal && signalBot) {
     await signalBot.start();
     setTelegramConnected(true); // reuse the connected flag for dashboard state
-    setBotInfo('signal', `ClaudeClaw (Signal)`);
+    setBotInfo('signal', `LeonClaw OS (Signal)`);
     if (AGENT_ID === 'main') {
-      console.log(`\n  ClaudeClaw online via Signal: ${SIGNAL_PHONE_NUMBER}`);
+      console.log(`\n  LeonClaw OS online via Signal: ${SIGNAL_PHONE_NUMBER}`);
       if (SIGNAL_AUTHORIZED_RECIPIENTS.length === 0) {
         console.log('  No SIGNAL_AUTHORIZED_RECIPIENTS set — only sync-to-self messages will be accepted.');
       }
       console.log();
     } else {
-      console.log(`\n  ClaudeClaw agent [${AGENT_ID}] online via Signal\n`);
+      console.log(`\n  LeonClaw OS agent [${AGENT_ID}] online via Signal\n`);
     }
     return;
   }
@@ -399,7 +399,7 @@ async function main(): Promise<void> {
   if (!bot) throw new Error('Telegram bot not created and Signal not active — check MESSENGER_TYPE.');
 
   // Clear any existing webhook so polling works cleanly (e.g., if token was
-  // previously used with a webhook-based bot or another ClaudeClaw instance).
+  // previously used with a webhook-based bot or another LeonClaw OS instance).
   try {
     await bot.api.deleteWebhook({ drop_pending_updates: false });
   } catch (err) {
@@ -409,16 +409,16 @@ async function main(): Promise<void> {
   await bot.start({
     onStart: (botInfo) => {
       setTelegramConnected(true);
-      setBotInfo(botInfo.username ?? '', botInfo.first_name ?? 'ClaudeClaw');
-      logger.info({ username: botInfo.username }, 'ClaudeClaw is running');
+      setBotInfo(botInfo.username ?? '', botInfo.first_name ?? 'LeonClaw OS');
+      logger.info({ username: botInfo.username }, 'LeonClaw OS is running');
       if (AGENT_ID === 'main') {
-        console.log(`\n  ClaudeClaw online: @${botInfo.username}`);
+        console.log(`\n  LeonClaw OS online: @${botInfo.username}`);
         if (!ALLOWED_CHAT_ID) {
           console.log(`  Send /chatid to get your chat ID for ALLOWED_CHAT_ID`);
         }
         console.log();
       } else {
-        console.log(`\n  ClaudeClaw agent [${AGENT_ID}] online: @${botInfo.username}\n`);
+        console.log(`\n  LeonClaw OS agent [${AGENT_ID}] online: @${botInfo.username}\n`);
       }
     },
   });

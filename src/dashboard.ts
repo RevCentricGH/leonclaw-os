@@ -1007,7 +1007,7 @@ export function startDashboard(botApi?: Api<RawApi>): void {
     const chatId = c.req.query('chatId') || '';
     const info = getBotInfo();
     return c.json({
-      botName: info.name || 'ClaudeClaw',
+      botName: info.name || 'LeonClaw OS',
       botUsername: info.username || '',
       pid: process.pid,
       chatId: chatId || null,

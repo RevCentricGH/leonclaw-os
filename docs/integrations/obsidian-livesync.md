@@ -1,6 +1,6 @@
 # Obsidian Vault Integration via Self-hosted LiveSync
 
-This guide shows how to give ClaudeClaw read/write access to one or more
+This guide shows how to give LeonClaw read/write access to one or more
 Obsidian vaults that you already sync across your devices with the
 [Self-hosted LiveSync](https://github.com/vrtmrz/obsidian-livesync) plugin
 (CouchDB backend). The Mac running the bot becomes *another* linked client
@@ -34,7 +34,7 @@ because:
           ~/Documents/Obsidian/<Vault>/...  (local .md files)
                     │
                     ▼
-         ClaudeClaw bot
+         LeonClaw bot
              │
              │ reads/writes via:
              │   1. `obsidian` CLI          (preferred — respects cache)
@@ -44,7 +44,7 @@ because:
           Claude Code
 ```
 
-LiveSync is the mirror driver; ClaudeClaw does not talk to CouchDB at all.
+LiveSync is the mirror driver; LeonClaw does not talk to CouchDB at all.
 
 ## Prerequisites
 
@@ -57,7 +57,7 @@ LiveSync is the mirror driver; ClaudeClaw does not talk to CouchDB at all.
   [the plugin's own setup guide](https://github.com/vrtmrz/obsidian-livesync#quick-start)
   first — you want sync running between your phone and CouchDB before
   adding the Mac.
-- **ClaudeClaw** cloned and `npm install`ed.
+- **LeonClaw** cloned and `npm install`ed.
 
 ## Step 1 — Install Obsidian on the bot's machine
 
@@ -114,9 +114,9 @@ Repeat for every vault you want the bot to see.
 changes while the app is open — the Mac's role is "linked client", same
 as your phone. (The CLI also requires the app running; see below.)
 
-## Step 4 — Tell ClaudeClaw where the vaults live
+## Step 4 — Tell LeonClaw where the vaults live
 
-ClaudeClaw uses the Claude Agent SDK's MCP support to expose the vault
+LeonClaw uses the Claude Agent SDK's MCP support to expose the vault
 files to the agent. The simplest configuration is a single
 `@modelcontextprotocol/server-filesystem` entry covering every vault plus
 any other project folders the bot should be able to read.

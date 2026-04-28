@@ -1,10 +1,10 @@
 #!/bin/bash
-# Uninstall all ClaudeClaw launchd agents
+# Uninstall all LeonClaw OS launchd agents
 set -e
 
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 
-echo "Uninstalling ClaudeClaw launchd agents..."
+echo "Uninstalling LeonClaw OS launchd agents..."
 echo ""
 
 for plist in "$LAUNCH_AGENTS_DIR"/com.claudeclaw.*.plist; do
@@ -17,5 +17,5 @@ for plist in "$LAUNCH_AGENTS_DIR"/com.claudeclaw.*.plist; do
 done
 
 echo ""
-echo "All ClaudeClaw agents uninstalled."
+echo "All LeonClaw OS agents uninstalled."
 echo "Processes will stop within a few seconds."

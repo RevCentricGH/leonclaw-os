@@ -5,7 +5,7 @@ import yaml from 'js-yaml';
 import { CLAUDECLAW_CONFIG, PROJECT_ROOT, STORE_DIR } from './config.js';
 import { readEnvFile } from './env.js';
 
-export const DEFAULT_MAIN_DESCRIPTION = 'Primary ClaudeClaw bot';
+export const DEFAULT_MAIN_DESCRIPTION = 'Primary LeonClaw OS bot';
 
 function mainConfigPath(): string {
   return path.join(STORE_DIR, 'main-config.json');

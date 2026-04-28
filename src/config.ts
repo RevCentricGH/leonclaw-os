@@ -197,7 +197,7 @@ export const CONTEXT_LIMIT = parseInt(
   10,
 );
 
-// Dashboard — web UI for monitoring ClaudeClaw state
+// Dashboard — web UI for monitoring LeonClaw OS state
 export const DASHBOARD_PORT = parseInt(
   process.env.DASHBOARD_PORT || envConfig.DASHBOARD_PORT || '3141',
   10,

@@ -498,12 +498,12 @@ export function createSignalBot(): SignalBot {
 
     switch (cmd) {
       case 'start':
-        await sendMessage(chatId, `ClaudeClaw online via Signal. Agent: ${AGENT_ID}.\n\nSend /help for commands.`);
+        await sendMessage(chatId, `LeonClaw OS online via Signal. Agent: ${AGENT_ID}.\n\nSend /help for commands.`);
         return true;
 
       case 'help':
         await sendMessage(chatId,
-          'ClaudeClaw — Commands (Signal)\n\n' +
+          'LeonClaw OS — Commands (Signal)\n\n' +
           '/newchat — Start a new Claude session\n' +
           '/forget — Clear session\n' +
           '/memory — View recent memories\n' +

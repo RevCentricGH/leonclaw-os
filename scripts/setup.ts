@@ -35,7 +35,7 @@ function loadBanner(): string {
   try {
     return fs.readFileSync(path.join(PROJECT_ROOT, 'banner.txt'), 'utf-8');
   } catch {
-    return '\n  ClaudeClaw\n';
+    return '\n  LeonClaw\n';
   }
 }
 
@@ -151,17 +151,17 @@ async function main() {
 
   // ── 1. Banner + intro ────────────────────────────────────────────────────
   console.log(`${c.cyan}${c.bold}${loadBanner()}${c.reset}`);
-  console.log(`  ${c.bold}Welcome to ClaudeClaw.${c.reset}`);
+  console.log(`  ${c.bold}Welcome to LeonClaw.${c.reset}`);
   console.log();
   info('This wizard will get you set up in about 5 minutes.');
   info('Press Ctrl+C at any time to exit. You can re-run this at any time with: npm run setup');
   console.log();
 
-  // ── 2. What is ClaudeClaw ────────────────────────────────────────────────
-  section('What is ClaudeClaw?');
+  // ── 2. What is LeonClaw ────────────────────────────────────────────────
+  section('What is LeonClaw?');
 
-  console.log(`  ClaudeClaw bridges your Claude Code CLI to Telegram.`);
-  console.log(`  You message your bot from your phone. ClaudeClaw runs the`);
+  console.log(`  LeonClaw bridges your Claude Code CLI to Telegram.`);
+  console.log(`  You message your bot from your phone. LeonClaw runs the`);
   console.log(`  ${c.bold}actual${c.reset} ${c.cyan}claude${c.reset} CLI on your computer — with all your skills,`);
   console.log(`  tools, and context — and sends the result back to you.`);
   console.log();
@@ -179,12 +179,12 @@ async function main() {
   console.log(`  ${c.bold}FAQ${c.reset}`);
   console.log();
   console.log(`  ${c.cyan}Q:${c.reset} Does this cost anything?`);
-  info('ClaudeClaw itself is free. You need a Claude Code subscription (Max plan)');
+  info('LeonClaw itself is free. You need a Claude Code subscription (Max plan)');
   info('or an Anthropic API key. Optional features (voice, video) have their own');
   info('free tiers. Nothing is billed without your API keys.');
   console.log();
   console.log(`  ${c.cyan}Q:${c.reset} Does my computer need to stay on?`);
-  info('Yes. ClaudeClaw runs on your machine. When your computer sleeps or shuts');
+  info('Yes. LeonClaw runs on your machine. When your computer sleeps or shuts');
   info('down, the bot goes offline. Messages queue in Telegram and arrive when');
   info('you restart.');
   console.log();
@@ -298,7 +298,7 @@ async function main() {
   // ── 4. What do you want to enable? ──────────────────────────────────────
   section('Choose your features');
 
-  info('ClaudeClaw OS has several optional features. Tell us what you want.');
+  info('LeonClaw OS has several optional features. Tell us what you want.');
   info('You can always add more later by editing .env and restarting.');
   console.log();
 
@@ -315,7 +315,7 @@ async function main() {
     console.log();
     console.log(`  ${c.bold}How the WhatsApp bridge works:${c.reset}`);
     console.log();
-    info('ClaudeClaw uses whatsapp-web.js to connect to your existing WhatsApp');
+    info('LeonClaw uses whatsapp-web.js to connect to your existing WhatsApp');
     info('account via the Linked Devices feature (same as WhatsApp Web).');
     console.log();
     info('A separate process (wa-daemon) runs in the background:');
@@ -553,7 +553,7 @@ async function main() {
   // ── 7. Skills to install ─────────────────────────────────────────────────
   section('Skills you might want');
 
-  info('ClaudeClaw auto-loads every skill in ~/.claude/skills/.');
+  info('LeonClaw auto-loads every skill in ~/.claude/skills/.');
   info('Here are the most useful ones to install:');
   console.log();
 
@@ -568,7 +568,7 @@ async function main() {
   if (wantVideo) {
     console.log(`  ${c.bold}Gemini skill (required for video analysis):${c.reset}`);
     console.log();
-    info('ClaudeClaw\'s video analysis uses the gemini-api-dev skill from Google.');
+    info('LeonClaw\'s video analysis uses the gemini-api-dev skill from Google.');
     info('It handles text, images, audio, video, function calling, and structured output.');
     info('Install it from: https://github.com/google-gemini/gemini-skills');
     console.log();
@@ -676,7 +676,7 @@ async function main() {
   // ── 9. Security ──────────────────────────────────────────────────────────
   section('Secure your bot');
 
-  info('ClaudeClaw has full access to your machine. If someone gets into');
+  info('LeonClaw has full access to your machine. If someone gets into');
   info('your Telegram account, they control the bot. These layers protect you.');
   console.log();
 
@@ -808,7 +808,7 @@ async function main() {
   // ── 11. Optional Claude API key ───────────────────────────────────────────
   section('Claude authentication');
 
-  info('By default, ClaudeClaw uses your existing claude login (Max plan).');
+  info('By default, LeonClaw uses your existing claude login (Max plan).');
   info('This is fine for personal use on your own machine.');
   console.log();
   info('Set an API key if you\'re deploying on a server, or want pay-per-token');
@@ -828,7 +828,7 @@ async function main() {
   await sleep(300);
 
   const lines = [
-    '# ClaudeClaw — generated by setup wizard',
+    '# LeonClaw — generated by setup wizard',
     '# Edit freely. Re-run: npm run setup',
     '',
     '# ── Required ──────────────────────────────────────────────────',
@@ -921,7 +921,7 @@ async function main() {
   // ── 15. Multi-agent setup (optional) ────────────────────────────────────
   section('Agent team (optional)');
 
-  info('ClaudeClaw can run specialist agents alongside the main bot.');
+  info('LeonClaw can run specialist agents alongside the main bot.');
   info('Each agent is its own Telegram bot with a focused role, its own');
   info('context window, and its own chat on your phone.');
   console.log();
@@ -1111,7 +1111,7 @@ async function main() {
   // ── 16. Summary ───────────────────────────────────────────────────────────
   console.log();
   console.log(`  ${c.cyan}╔════════════════════════════════════════════╗${c.reset}`);
-  console.log(`  ${c.cyan}║${c.reset}${c.bold}           ClaudeClaw is ready!             ${c.reset}${c.cyan}║${c.reset}`);
+  console.log(`  ${c.cyan}║${c.reset}${c.bold}           LeonClaw is ready!             ${c.reset}${c.cyan}║${c.reset}`);
   console.log(`  ${c.cyan}╚════════════════════════════════════════════╝${c.reset}`);
   console.log();
 
@@ -1141,7 +1141,7 @@ async function main() {
     } else {
       ok('Build complete');
       console.log();
-      info('Starting ClaudeClaw... (press Ctrl+C to stop)');
+      info('Starting LeonClaw... (press Ctrl+C to stop)');
       console.log();
       // Close readline before handing off to the bot process
       rl.close();
@@ -1242,7 +1242,7 @@ async function setupLinux() {
     const serviceDir = path.join(os.homedir(), '.config', 'systemd', 'user');
     const servicePath = path.join(serviceDir, 'claudeclaw.service');
     const service = `[Unit]
-Description=ClaudeClaw Telegram Bot
+Description=LeonClaw Telegram Bot
 After=network.target
 
 [Service]
@@ -1279,7 +1279,7 @@ function setupWindows() {
   warn('Windows detected.');
   console.log();
   info('Option A — WSL2 (recommended):');
-  info('  Install WSL2, clone ClaudeClaw inside the WSL2 filesystem,');
+  info('  Install WSL2, clone LeonClaw inside the WSL2 filesystem,');
   info('  and re-run setup. Keep ~/.claude/ inside WSL2, not the Windows mount.');
   console.log();
   info('Option B — PM2 (native Windows):');

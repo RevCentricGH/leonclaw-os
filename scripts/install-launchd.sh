@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install ClaudeClaw launchd agents for auto-start on login + auto-restart on crash
+# Install LeonClaw launchd agents for auto-start on login + auto-restart on crash
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -8,7 +8,7 @@ LAUNCHD_DIR="$PROJECT_DIR/launchd"
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 LOG_DIR="$PROJECT_DIR/logs"
 
-echo "ClaudeClaw launchd installer"
+echo "LeonClaw launchd installer"
 echo "============================"
 echo ""
 

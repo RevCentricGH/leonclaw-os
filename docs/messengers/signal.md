@@ -1,8 +1,8 @@
 # Signal Messenger Adapter
 
-ClaudeClaw ships with a Signal adapter as an alternative to the default
+LeonClaw ships with a Signal adapter as an alternative to the default
 Telegram bot. Signal offers end-to-end encryption by default, a native
-"Note to Self" chat that works elegantly with ClaudeClaw's
+"Note to Self" chat that works elegantly with LeonClaw's
 single-authorized-user model, and no bot-token-registration hurdle.
 
 This guide walks through the full setup on macOS. Linux works the same way
@@ -21,7 +21,7 @@ Scheduler and is not yet documented.
                       │
                       │  JSON-RPC 2.0 over localhost TCP (default :7583)
                       ▼
-          ClaudeClaw bot (src/signal-bot.ts)
+          LeonClaw bot (src/signal-bot.ts)
                       │
                       │  Claude Agent SDK
                       ▼
@@ -66,7 +66,7 @@ linking QR code inline in the terminal.
 ## Step 2 — Link as a secondary device
 
 ```bash
-signal-cli link -n "ClaudeClaw-Mac" | tee /tmp/signal-link.txt
+signal-cli link -n "LeonClaw-Mac" | tee /tmp/signal-link.txt
 ```
 
 The command prints a `sgnl://linkdevice?uuid=...` URI and stays running
@@ -120,7 +120,7 @@ nc -zv 127.0.0.1 7583                # should say "connection succeeded"
 tail /tmp/signal-cli.err             # "Started JSON-RPC server on …"
 ```
 
-## Step 4 — Start ClaudeClaw
+## Step 4 — Start LeonClaw
 
 Either via the normal `npm start` or (recommended) install the main
 `launchd` service created by `npm run setup`. With `MESSENGER_TYPE=signal`
@@ -128,7 +128,7 @@ set, the bot skips Telegram entirely and connects to `signal-cli` on
 startup:
 
 ```
-ClaudeClaw online via Signal: +491234567890
+LeonClaw online via Signal: +491234567890
 Signal bot connected to signal-cli daemon {"host":"127.0.0.1","port":7583}
 ```
 
@@ -177,7 +177,7 @@ Everything that is not a command goes straight to Claude Opus by default.
 
 ## Voice (optional)
 
-ClaudeClaw's Signal adapter supports both directions:
+LeonClaw's Signal adapter supports both directions:
 
 **Voice input.** When you send a Signal voice note, `signal-cli` drops the
 AAC blob in `~/.local/share/signal-cli/attachments/<id>.aac`. The adapter
@@ -395,7 +395,7 @@ TELEGRAM_BOT_TOKEN=<your token>
 ALLOWED_CHAT_ID=<your chat id>
 ```
 
-Reload the service (`launchctl unload/load ~/Library/LaunchAgents/com.claudeclaw.app.plist`). The Signal-cli daemon can keep running; ClaudeClaw just stops connecting to it.
+Reload the service (`launchctl unload/load ~/Library/LaunchAgents/com.claudeclaw.app.plist`). The Signal-cli daemon can keep running; LeonClaw just stops connecting to it.
 
 To fully tear down Signal:
 
