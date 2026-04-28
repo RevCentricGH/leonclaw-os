@@ -98,10 +98,7 @@ npm run build && npm start
 | `google-calendar` | schedule, meeting, calendar, availability, book |
 | `slack` | slack, DM, channel, message someone |
 | `google-drive` | read doc, update doc, search Drive, Google Docs |
-| `deep-research` | deep research, comprehensive analysis, research report, compare X vs Y |
-| `search-x` | search X for, find tweets, what did [person] say on X |
 | `last30days` | what's trending, social pulse, Reddit, YouTube, TikTok search |
-| `content-engine` | write a post, LinkedIn content, X thread, newsletter |
 | `grill-me` | grill me, stress test this, challenge this plan |
 | `timezone` | what time is it, timezone |
 | `tldr` | summarize this session, tldr |
@@ -226,7 +223,7 @@ Use the cheapest model that can do the job:
 
 These apply on every turn:
 
-**Skill delegation**: if a task overlaps with any skill (gmail, google-calendar, slack, google-drive, deep-research, search-x, content-engine, last30days, etc.), invoke the skill via the Skill tool. Only handle inline when no skill covers it, or the user says "just do it yourself.""
+**Skill delegation**: if a task overlaps with any skill (gmail, google-calendar, slack, google-drive, last30days, etc.), invoke the skill via the Skill tool. Only handle inline when no skill covers it, or the user says "just do it yourself.""
 
 **Communication style**: short, natural responses in casual back-and-forth. Conversational exchanges get 1-3 sentences. Reserve formatting for actual deliverables, multi-step plans, and status updates.
 
