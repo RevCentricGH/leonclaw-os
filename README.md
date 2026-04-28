@@ -1,6 +1,8 @@
-# Maverick — Hunter's Personal AI Assistant
+# LeonClaw OS
 
-Built on [ClaudeClaw OS](https://github.com/earlyaidopters/claudeclaw-os). Maverick is Hunter's personal AI agent — accessible via Telegram, running on Mac, with persistent memory across sessions.
+Your personal AI assistant, delivered to your phone via Telegram. Runs on Mac, persists memory across sessions, and delegates work to specialized sub-agents.
+
+Built on [ClaudeClaw OS](https://github.com/earlyaidopters/claudeclaw-os).
 
 ## Setup (5 minutes)
 
@@ -20,7 +22,6 @@ npm run setup
 
 The setup wizard handles everything: Telegram bot config, token generation, feature selection.
 
-Then:
 ```bash
 npm run build
 npm start
@@ -40,12 +41,11 @@ Send yourself a message on Telegram to verify it's working.
 - `gmail` — email management
 - `google-calendar` — scheduling
 - `slack` — Slack DMs and channels
-- `google-drive` — Drive and Docs
-- `deep-research` — multi-source research reports
-- `search-x` — real-time X/Twitter search
+- `google-drive` — Google Drive and Docs
+- `google-slides` — presentations
 - `last30days` — social trend research (Reddit, YouTube, TikTok, X)
-- `content-engine` — LinkedIn, X, newsletter content
 - `grill-me` — stress-test a plan or idea
+- `caveman` — ultra-compressed communication mode
 - `timezone` — time zone lookups
 - `tldr` — session summarization
 
@@ -57,6 +57,13 @@ Send yourself a message on Telegram to verify it's working.
 - Multi-agent mission delegation (research, comms, content, ops)
 - Mission Control dashboard (web UI)
 - Cost tracking (`costs` command)
+
+## Customize It
+
+Edit `CLAUDE.md` to make the assistant yours:
+- Set the assistant name
+- Add your context (who you are, what you work on)
+- Add or remove skills from the skill table
 
 ## Configuration
 
@@ -70,9 +77,9 @@ All config lives in `.env`. Key vars:
 | `SECURITY_PIN` | Optional PIN lock |
 | `SHOW_COST_FOOTER` | `compact` or `verbose` to track spend per message |
 
-## Skills Install
+## Installing Skills Globally
 
-Skills live in `~/.claude/skills/`. To install the included skills globally:
+Skills live in `~/.claude/skills/`. To install the bundled skills:
 
 ```bash
 for skill in skills/*/; do

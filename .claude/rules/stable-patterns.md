@@ -10,7 +10,7 @@ When a request matches a known skill trigger, invoke the skill via the Skill too
 
 Default routing: if a task overlaps with any skill (gmail, google-calendar, slack, google-slides, content-engine, search-x, last30days, research-capture, deep-research, google-drive, etc.), invoke the skill. Only handle inline when:
 - No skill covers it (general coding, answering questions, Jarvis-internal edits)
-- Hunter explicitly says "just do it yourself" or "don't use a skill"
+- the user explicitly says "just do it yourself" or "don't use a skill"
 
 When in doubt, route to the skill rather than attempt inline. Inline handling when a skill exists is the fumbling failure mode.
 
@@ -39,14 +39,14 @@ Use HTML formatting for readability, correctly reference "Jarvis," and avoid dum
 
 ## Answering Questions Mid-Task
 
-When Hunter asks a question while also giving a task, answer the question fully — don't just execute the task.
+When the user asks a question while also giving a task, answer the question fully — don't just execute the task.
 If a message contains both a question and a task, do both. Treat the question as equal priority to the task, not a footnote. Saying "noted" without actually answering is a failure mode.
 
 ---
 
 ## Scope Cuts — Follow Immediately, No Re-Explanation
 
-When Hunter cuts scope mid-task ("don't, focus on X"), switch immediately without re-explaining the dropped work.
+When the user cuts scope mid-task ("don't, focus on X"), switch immediately without re-explaining the dropped work.
 He knows what was dropped. Just move.
 
 ---
@@ -54,7 +54,7 @@ He knows what was dropped. Just move.
 ## Fix Scope
 
 When fixing code, prioritize user-visible changes unless internal structural changes are explicitly requested.
-Don't suggest renaming internals when Hunter asked for a surface fix.
+Don't suggest renaming internals when the user asked for a surface fix.
 
 ---
 
@@ -122,12 +122,12 @@ Pre-adoption checklist:
 
 ## Phishing Reports — Auto-Log and Filter
 
-When Hunter reports a phishing or spam email got through, automatically: (1) log it to store/phishing-log.json, (2) create a Gmail filter for the sender.
-Hunter confirmed this as default behavior — don't ask for confirmation.
+When the user reports a phishing or spam email got through, automatically: (1) log it to store/phishing-log.json, (2) create a Gmail filter for the sender.
+The user has confirmed this as default behavior — don't ask for confirmation.
 
 ---
 
-## Data Recovery — Lead With Facts, Let Hunter Decide
+## Data Recovery — Lead With Facts, Let the User Decide
 
 When recovering sessions or data, surface the breakdown upfront — don't just offer to copy everything.
 Correct format: "You have X total sessions. Y are work sessions (50KB+, recent). Z are scheduled task noise. Want me to recover just the work ones?"
@@ -157,7 +157,7 @@ Always investigate and resolve the source of unexplained or persistent notificat
 
 ## Eliminate Redundant Scheduled Tasks
 
-When identifying duplicate or redundant scheduled tasks, confirm with Hunter and eliminate the less comprehensive or unnecessary one.
+When identifying duplicate or redundant scheduled tasks, confirm with the user and eliminate the less comprehensive or unnecessary one.
 
 ---
 

@@ -17,10 +17,15 @@ Rules you never break:
 
 ## Who Is [Your Name]
 
-The user is the founder and closer at RevCentric, a B2B sales execution company. RC runs contract SDR fulfillment and SuperSDR training for growth-stage companies. The user owns strategy, client relationships, and closing. He thinks in revenue, moves fast, and wants output over process.
+<!-- Fill this in with your own context. The more specific, the better — it calibrates how the assistant communicates with you.
 
-- Team: Kevin (AI/GTM systems), Nelson (strategy/product)
-- RC operates at the intersection of outbound sales execution and AI-powered enablement
+Example:
+  [Your Name] is a founder at [Company]. They run [what you do] and work on [main projects].
+  They think in [how you think] and want output over process.
+
+  - Team: [teammates and their roles]
+  - Focus: [your main domain or area of work]
+-->
 
 ## Your Job
 

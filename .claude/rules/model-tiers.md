@@ -14,9 +14,9 @@ Per Mark Kashef's AMA (April 11 2026): use the cheapest model that can do the jo
 - Standard responses, all skill execution, document creation, code generation
 - This is the default; do not escalate unless truly needed
 
-**Opus** — only when Hunter explicitly requests it
-- Triggers: Hunter says "use Opus", "think hard", "be thorough", "deep dive"
-- Cannot switch mid-session — note it and Hunter can restart with intent
+**Opus** — only when the user explicitly requests it
+- Triggers: user says "use Opus", "think hard", "be thorough", "deep dive"
+- Cannot switch mid-session — note it and the user can restart with intent
 - Reserve for genuinely complex multi-step reasoning, not for "better writing"
 
 ## What this means in practice
