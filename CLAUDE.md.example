@@ -119,9 +119,14 @@ Execute first. If you need clarification, ask one short question.
 |-------|---------------|
 | `gmail` | emails, inbox, reply, send |
 | `google-calendar` | schedule, meeting, calendar, availability |
-| `todo` | tasks, what's on my plate |
-| `agent-browser` | browse, scrape, click, fill form |
-| `maestro` | parallel tasks, scale output |
+| `slack` | Slack DMs, channels, message someone |
+| `google-drive` | read doc, update doc, search Drive, Google Docs |
+| `google-slides` | create deck, build presentation, update slides |
+| `last30days` | what's trending, social pulse, Reddit, YouTube, X search |
+| `grill-me` | stress-test a plan, challenge an idea |
+| `caveman` | ultra-compressed mode, save tokens |
+| `timezone` | what time is it, time zone lookups |
+| `tldr` | summarize this session |
 
 <!-- Add your own skills. Run `ls ~/.claude/skills/` to see what's installed. -->
 

@@ -220,8 +220,6 @@ Then restart the bot.
 
 ## How It Works
 
-![LeonClaw OS architecture](assets/architecture.jpeg)
-
 LeonClaw spawns a real Claude Code process on your machine for every message. It's not a wrapper around the API — it's your full local Claude environment, with all your skills, tools, and context, made accessible from anywhere via Telegram.
 
 Messages in → Claude runs locally → response out. Memory, sessions, and context persist in SQLite across every conversation.
