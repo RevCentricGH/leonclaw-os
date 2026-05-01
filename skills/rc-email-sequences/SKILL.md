@@ -82,16 +82,17 @@ If the operator provides an existing client slug, skip init and go straight to l
 If the operator has an existing leads CSV (already built the list, just needs sequences):
 - Use `--leads /path/to/file.csv`
 - Pass `--spot-doc <url>` if they want to override copy context from the SPOT doc
-- Suggest `--dry-run` first so they can review the copy before pushing to SmartLead
+- Always use `--dry-run` first so Hunter can review the copy before pushing to SmartLead
 
 If starting fresh from Apollo:
 - Use `--apollo-pull --limit N`
 - Confirm limit (default 50)
 
 Also confirm:
-- Dry run first to review copy? (recommended for new clients)
 - Max tier (default Tier 1+2)
 - Skip research? (faster, less personalized — not recommended unless iterating quickly)
+
+Default is always `--dry-run`. Do not push to SmartLead unless Hunter explicitly says "looks good, push it" or "push to SmartLead" after reviewing the output.
 
 ### Step 2 — Run enrich
 
@@ -137,7 +138,9 @@ Campaigns: {campaign_names}
 Watch #rc-outbound-alerts for any copy audit flags.
 ```
 
-If `--dry-run` was used, tell the operator the output is at the path they specified (or `/tmp/rc-{slug}-results.json`) and that nothing was pushed.
+After the dry-run output prints, ask: "Copy looks good? Say 'push it' to upload to SmartLead, or let me know what to change."
+
+Only re-run without `--dry-run` after explicit confirmation. When pushing live, drop the `--dry-run` and `--output` flags and re-run the same command.
 
 ## Mass personalizer workflow (`personalize`)
 
