@@ -38,10 +38,10 @@ If not already in the trigger: "Which client? (cekura / meshapi / crux)"
 cd ~/rc-automations/pipeline
 
 # Campaign inventory
-python cold_email.py campaigns --client <slug>
+python3 cold_email.py campaigns --client <slug>
 
 # Performance stats
-python cold_email.py stats --client <slug>
+python3 cold_email.py stats --client <slug>
 ```
 
 ### Step 3 — Report results
