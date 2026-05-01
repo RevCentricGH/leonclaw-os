@@ -56,16 +56,42 @@ When ambiguous, ask one question: "Do you have a proven email body you want to p
 
 ### Step 1 — Confirm inputs
 
-Ask for anything not already provided:
-- Client slug (cekura / meshapi / crux)
-- Lead source: Apollo pull (`--apollo-pull`) or path to CSV (`--leads /path/to/file.csv`)
-- If Apollo pull: confirm limit (default 50, ask if they want more)
-- Dry run? (default: no — pushes to SmartLead)
+**Determine client config:**
 
-Optional overrides to ask about if the operator seems uncertain:
-- Max tier to include (default: Tier 1+2; Tier 3 is unverified ICP-only)
-- Skip research (faster, less personalized — not recommended)
-- SPOT doc URL to pull messaging context from
+If the operator provides a SPOT doc URL (new client or no existing YAML):
+1. Ask for the client slug if not already given
+2. Check if the YAML exists locally:
+   ```bash
+   ls ~/rc-automations/pipeline/clients/{slug}.yaml 2>/dev/null
+   ```
+3. If missing, run init from the SPOT doc:
+   ```bash
+   cd ~/rc-automations/pipeline
+   python3 cold_email.py init --client <slug> --spot-doc <url>
+   ```
+   Review the generated YAML with the operator. Flag any `[TBD]` fields before proceeding.
+4. Also run setup to create the SmartLead campaigns and tracking sheet:
+   ```bash
+   python3 cold_email.py setup --client <slug>
+   ```
+
+If the operator provides an existing client slug, skip init and go straight to lead source.
+
+**Determine lead source:**
+
+If the operator has an existing leads CSV (already built the list, just needs sequences):
+- Use `--leads /path/to/file.csv`
+- Pass `--spot-doc <url>` if they want to override copy context from the SPOT doc
+- Suggest `--dry-run` first so they can review the copy before pushing to SmartLead
+
+If starting fresh from Apollo:
+- Use `--apollo-pull --limit N`
+- Confirm limit (default 50)
+
+Also confirm:
+- Dry run first to review copy? (recommended for new clients)
+- Max tier (default Tier 1+2)
+- Skip research? (faster, less personalized — not recommended unless iterating quickly)
 
 ### Step 2 — Run enrich
 
