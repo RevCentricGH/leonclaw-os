@@ -20,7 +20,7 @@ Same prereqs as `rc-list-build`. Local clone of rc-automations + Python env + `.
 ## What this skill does
 
 1. Confirms client slug, leads CSV, and sample count
-2. Runs `python cold_email.py preview --client <slug> --leads <path> --count <N>`
+2. Runs `python3 cold_email.py preview --client <slug> --leads <path> --count <N>`
 3. Prints full sequences to the terminal for review — subject, first line, body, CTA, P.S., signature, A/B variants
 
 ## Workflow
@@ -36,7 +36,7 @@ Need from the operator:
 
 ```bash
 cd ~/rc-automations/pipeline
-python cold_email.py preview \
+python3 cold_email.py preview \
   --client <slug> \
   --leads /path/to/leads.csv \
   --count <N>
