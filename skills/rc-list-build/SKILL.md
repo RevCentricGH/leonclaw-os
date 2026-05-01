@@ -60,9 +60,26 @@ Before this skill works, Hunter needs:
 
 ### Step 1 — Confirm client and options
 
-If the trigger message names a client, use it. Otherwise ask:
+**New client (SPOT doc URL provided):**
+If the operator pastes a Google Doc URL or says "new client", treat it as a new client setup:
+1. Ask for the client slug (short name, lowercase, no spaces — e.g. `acmecorp`)
+2. Check if `~/rc-automations/pipeline/clients/{slug}.yaml` already exists:
+   ```bash
+   ls ~/rc-automations/pipeline/clients/{slug}.yaml 2>/dev/null
+   ```
+3. If it doesn't exist, run init to generate it from the SPOT doc:
+   ```bash
+   cd ~/rc-automations/pipeline
+   python3 cold_email.py init --client <slug> --spot-doc <url>
+   ```
+   Review the generated YAML output with the operator before proceeding. Flag any `[TBD]` fields that need filling before discovery will work (especially `apollo_label_id` and `gsheet.folder_id`).
+4. Once the YAML is confirmed, continue to Step 2.
 
-> "Which client? (cekura / meshapi / crux)"
+**Existing client (slug provided):**
+If the trigger message names a client slug, use it directly and skip to Step 2.
+
+If neither a slug nor a doc URL is provided, ask:
+> "Which client? Paste a client slug (cekura / meshapi / crux) or a SPOT doc URL for a new client."
 
 Confirm any flag overrides:
 - `--limit N` — cap contacts per Apollo label (default: no limit)
@@ -123,7 +140,7 @@ Or confirm they want the full `enrich` pipeline instead (which runs sequences + 
 
 ## Clients
 
-Available clients are defined in `~/rc-automations/pipeline/clients/*.yaml`. Current: `cekura`, `meshapi`, `crux`. If the operator specifies a client that has no YAML, stop and tell them to run `init` first.
+Available clients are defined in `~/rc-automations/pipeline/clients/*.yaml`. Current known clients: `cekura`, `meshapi`, `crux`. For any new client, provide a SPOT doc URL and this skill handles `init` before running discovery.
 
 ## Gotchas
 
