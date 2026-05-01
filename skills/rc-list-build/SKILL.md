@@ -17,7 +17,7 @@ Runs the discovery pipeline locally on your machine against rc-automations. Stop
 ## What this skill does
 
 1. Confirms client slug and any flag overrides with the operator
-2. Runs `python cold_email.py discovery --client <slug> [flags]` from the local rc-automations clone
+2. Runs `python3 cold_email.py discovery --client <slug> [flags]` from the local rc-automations clone
 3. Reports what landed in each Sheets tab (Tier A / B / C counts)
 4. Optionally pushes the final list to SmartLead if the operator asks
 
@@ -47,12 +47,12 @@ Before this skill works, Hunter needs:
    - Service account (recommended): set `GOOGLE_SERVICE_ACCOUNT_JSON=/path/to/key.json` and share the client's Drive folder with the service account email
    - OAuth: set `GOOGLE_CREDS_PATH` and `GOOGLE_TOKEN_PATH`. First run opens a browser to authorize.
 
-4. **Client config must exist:** `~/rc-automations/pipeline/clients/{slug}.yaml`. If missing, run `python cold_email.py init --client <slug>` or copy `_template.yaml` and fill it in.
+4. **Client config must exist:** `~/rc-automations/pipeline/clients/{slug}.yaml`. If missing, run `python3 cold_email.py init --client <slug>` or copy `_template.yaml` and fill it in.
 
 5. **Run `setup` first for new clients:**
    ```bash
    cd ~/rc-automations/pipeline
-   python cold_email.py setup --client <slug>
+   python3 cold_email.py setup --client <slug>
    ```
    This creates the Google Sheets tracking sheet.
 
@@ -78,7 +78,7 @@ If the operator hasn't mentioned any flags, use defaults (qual + reveal + verify
 
 ```bash
 cd ~/rc-automations/pipeline
-python cold_email.py discovery --client <slug> [flags]
+python3 cold_email.py discovery --client <slug> [flags]
 ```
 
 Stream output to the terminal so the operator can watch stage progress. Key stages to note:
@@ -116,7 +116,7 @@ If any stage failed or produced an empty result, surface the specific error from
 If the operator asked for `--push-smartlead` or says "push it to SmartLead" after seeing results, re-run with:
 
 ```bash
-python cold_email.py discovery --client <slug> --push-smartlead
+python3 cold_email.py discovery --client <slug> --push-smartlead
 ```
 
 Or confirm they want the full `enrich` pipeline instead (which runs sequences + push in one pass).
@@ -130,4 +130,4 @@ Available clients are defined in `~/rc-automations/pipeline/clients/*.yaml`. Cur
 - **Apollo label IDs**: The discovery command uses Apollo saved labels defined in `clients/{slug}.yaml`. If a label was deleted or renamed in Apollo, the pull returns 0. Check the YAML for `apollo_label_id` values.
 - **Credits**: Email reveal costs 1 Apollo credit per contact. Budget ~60% of contacts needing a reveal. Warn if the config is set to reveal >200 contacts in one pass.
 - **Sheets auth**: If using a service account, the client's Google Drive folder must be shared with the service account email before the first run. The error will say "403 Forbidden" on the Sheets write.
-- **`setup` prereq**: If the tracking sheet doesn't exist yet, the upload stage fails. Run `python cold_email.py setup --client <slug>` once to create it.
+- **`setup` prereq**: If the tracking sheet doesn't exist yet, the upload stage fails. Run `python3 cold_email.py setup --client <slug>` once to create it.
