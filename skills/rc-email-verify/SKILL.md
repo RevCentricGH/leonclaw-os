@@ -21,7 +21,7 @@ Same prereqs as `rc-list-build`. Local clone of rc-automations + Python env + `.
 ## What this skill does
 
 1. Gets the path to the input file from the operator
-2. Runs `python cold_email.py verify --input <path> [--output <path>]`
+2. Runs `python3 cold_email.py verify --input <path> [--output <path>]`
 3. Reports pass/fail/risky counts and where the output CSV landed
 
 ## Workflow
@@ -36,7 +36,7 @@ Ask for anything not provided:
 
 ```bash
 cd ~/rc-automations/pipeline
-python cold_email.py verify \
+python3 cold_email.py verify \
   --input /path/to/emails.csv \
   [--output /path/to/output.csv]
 ```
