@@ -71,7 +71,7 @@ Optional overrides to ask about if the operator seems uncertain:
 
 ```bash
 cd ~/rc-automations/pipeline
-python cold_email.py enrich \
+python3 cold_email.py enrich \
   --client <slug> \
   [--apollo-pull | --leads /path/to/leads.csv] \
   [--limit N] \
@@ -128,7 +128,7 @@ Need from the operator:
 cd ~/rc-automations/pipeline
 
 # If body is inline (short):
-python cold_email.py personalize \
+python3 cold_email.py personalize \
   --client <slug> \
   --leads /path/to/leads.csv \
   --body "Your proven email body text here..." \
@@ -137,7 +137,7 @@ python cold_email.py personalize \
   [--dry-run]
 
 # If body is in a file:
-python cold_email.py personalize \
+python3 cold_email.py personalize \
   --client <slug> \
   --leads /path/to/leads.csv \
   --body-file /path/to/body.txt \
@@ -199,4 +199,4 @@ Tell the operator the output CSV has three columns: `custom_variable_1` (persona
 - **Copy audit**: The pipeline runs a copy audit before pushing. Em dashes, AI clichés, and overlength sequences get flagged in Slack (`#rc-outbound-alerts`) but don't block the push. Tell the operator to check Slack after a run.
 - **Tier filter**: Default `--max-tier 2` excludes Tier C (ICP-qualified but no signal). If the operator wants volume, pass `--max-tier 3` or `--include-unqualified`.
 - **SPOT doc context**: If the client YAML has a `spot_doc_url`, the sequence engine pulls Tab 4/6/7 from the SPOT for copy context. Pass `--spot-doc <url>` to override with a different doc.
-- **SmartLead campaign pairing**: The `enrich` command pushes to whatever campaign IDs are set in `clients/{slug}.yaml`. If campaigns don't exist yet in SmartLead, run `python cold_email.py setup --client <slug>` first.
+- **SmartLead campaign pairing**: The `enrich` command pushes to whatever campaign IDs are set in `clients/{slug}.yaml`. If campaigns don't exist yet in SmartLead, run `python3 cold_email.py setup --client <slug>` first.
