@@ -253,6 +253,19 @@ export const PROTECTED_ENV_VARS = (
   'ANTHROPIC_API_KEY,CLAUDE_CODE_OAUTH_TOKEN,DB_ENCRYPTION_KEY,TELEGRAM_BOT_TOKEN,SLACK_USER_TOKEN,GROQ_API_KEY,ELEVENLABS_API_KEY,GOOGLE_API_KEY'
 ).split(',').map((s) => s.trim()).filter(Boolean);
 
+// ── Signal messenger (optional) ──────────────────────────────────────
+export const SIGNAL_PHONE_NUMBER =
+  process.env.SIGNAL_PHONE_NUMBER || envConfig.SIGNAL_PHONE_NUMBER || '';
+export const SIGNAL_RPC_HOST =
+  process.env.SIGNAL_RPC_HOST || envConfig.SIGNAL_RPC_HOST || 'localhost';
+export const SIGNAL_RPC_PORT = parseInt(
+  process.env.SIGNAL_RPC_PORT || envConfig.SIGNAL_RPC_PORT || '8080',
+  10,
+);
+export const SIGNAL_AUTHORIZED_RECIPIENTS = (
+  process.env.SIGNAL_AUTHORIZED_RECIPIENTS || envConfig.SIGNAL_AUTHORIZED_RECIPIENTS || ''
+).split(',').map((s) => s.trim()).filter(Boolean);
+
 // ── War Room (voice meeting via Pipecat WebSocket) ──────────────────
 export const WARROOM_ENABLED =
   (process.env.WARROOM_ENABLED || envConfig.WARROOM_ENABLED || 'false').toLowerCase() === 'true';
