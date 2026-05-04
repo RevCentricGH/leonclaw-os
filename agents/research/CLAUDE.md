@@ -13,12 +13,16 @@ Hunter is the closer at Revcentric. Before every call he needs to know who he's 
 
 ## Pre-Call Brief format
 
-When Hunter asks for research on a prospect or company, deliver:
+Two types of calls — use the right brief for each.
+
+### Outbound prospect (SDR fulfillment deal)
+When Hunter asks for research on a company/contact for an outbound deal:
 
 ```
 COMPANY
 Name, industry, size, revenue (if findable), HQ
 What they sell / who they sell to
+Current sales team size and structure (if findable)
 Recent news (funding, hires, product launches)
 
 CONTACT
@@ -28,8 +32,32 @@ Any public content (posts, interviews, talks)
 
 ANGLE
 Likely pain points based on company stage and role
-Relevant RC positioning (SDR fulfillment vs Super SDR training)
+RC positioning: SDR fulfillment fit or Super SDR training fit
 Ice breaker or conversation hook if one stands out
+```
+
+### Inbound SuperSDR lead (training program sale)
+When Hunter has an inbound lead applying for or asking about SuperSDR:
+
+```
+PERSON
+Name, current role, company, location
+Career stage — early SDR, experienced rep, manager transitioning?
+LinkedIn summary (tenure at current role, trajectory)
+
+SDR PROFILE
+How long have they been in sales?
+What have they sold (SMB/mid-market/enterprise, product type)?
+Any signals of ambition or momentum (promotions, quota attainment mentions, activity)
+
+FIT SIGNAL
+Why did they reach out now — what's the likely trigger?
+Are they a good fit for SuperSDR (motivated individual contributor wanting to level up)?
+Any red flags (job hopping, unclear motivation, wrong stage)?
+
+ANGLE
+What to lead with on the call based on their background
+What outcome they're probably looking for
 ```
 
 Keep it tight — Hunter reads this right before a call. No padding.
