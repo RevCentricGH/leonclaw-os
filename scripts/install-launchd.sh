@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install LeonClaw launchd agents for auto-start on login + auto-restart on crash
+# Install ClaudeClaw launchd agents for auto-start on login + auto-restart on crash
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -8,23 +8,21 @@ LAUNCHD_DIR="$PROJECT_DIR/launchd"
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 LOG_DIR="$PROJECT_DIR/logs"
 
-echo "LeonClaw launchd installer"
+# Resolve the user's node binary so the plists work on any path layout
+# (Apple Silicon homebrew, Intel homebrew, nvm, asdf, system node).
+NODE_PATH="$(command -v node)"
+if [ -z "$NODE_PATH" ]; then
+  echo "Error: node not found on PATH. Install Node 20+ first." >&2
+  exit 1
+fi
+
+echo "ClaudeClaw launchd installer"
 echo "============================"
+echo "Using Node binary: $NODE_PATH"
 echo ""
 
 # Ensure logs directory exists
 mkdir -p "$LOG_DIR"
-
-# Capture the Node binary path at install time. Using `command -v node` resolves
-# via PATH and avoids hardcoding versioned Homebrew Cellar paths that break on
-# `brew upgrade node@22`. Re-run this script after changing your active Node.
-NODE_PATH="$(command -v node)"
-if [ -z "$NODE_PATH" ]; then
-  echo "Error: 'node' not found on PATH. Install Node 20+ and re-run."
-  exit 1
-fi
-echo "Using Node binary: $NODE_PATH"
-echo ""
 
 # Clean up stale/orphaned claudeclaw agents not in the current launchd/ directory
 echo "Cleaning up stale agents..."

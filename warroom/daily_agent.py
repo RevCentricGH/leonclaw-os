@@ -79,25 +79,43 @@ AVATARS_DIR = Path(__file__).resolve().parent / "avatars"
 PROFILE_PIC_SIZE = 720  # square, matches DailyParams below
 
 
-def load_avatar_frame(agent_id: str, size: int = PROFILE_PIC_SIZE) -> OutputImageRawFrame | None:
+def load_avatar_frame(
+    agent_id: str,
+    size: int = PROFILE_PIC_SIZE,
+    explicit_path: str | None = None,
+) -> OutputImageRawFrame | None:
     """Load the agent's meet avatar and convert it to an OutputImageRawFrame
     so Daily's camera-out track displays it as a static profile picture.
 
-    Avatar preference order (same as meet-cli for Pika):
-      1. <agent>-meet.png (the anime/Shiro variant we generated)
-      2. <agent>.png (the warroom sidebar cartoon)
+    Source priority:
+      1. --avatar-path supplied by meet-cli (Node-side resolver picked it,
+         which means user uploads + Telegram-cached photos win)
+      2. <agent>-meet.png  (bundled meet-optimized art)
+      3. <agent>.png       (bundled default art)
     """
     if Image is None:
         logger.warning("PIL not available, skipping profile picture")
         return None
 
-    candidates = [
-        AVATARS_DIR / f"{agent_id}-meet.png",
-        AVATARS_DIR / f"{agent_id}-meet.jpg",
-        AVATARS_DIR / f"{agent_id}.png",
-        AVATARS_DIR / f"{agent_id}.jpg",
-    ]
-    path = next((p for p in candidates if p.exists() and p.stat().st_size > 1024), None)
+    path = None
+    if explicit_path:
+        candidate = Path(explicit_path)
+        if candidate.exists() and candidate.stat().st_size > 1024:
+            path = candidate
+        else:
+            logger.warning(
+                "explicit --avatar-path %s missing or too small; falling back",
+                explicit_path,
+            )
+
+    if path is None:
+        candidates = [
+            AVATARS_DIR / f"{agent_id}-meet.png",
+            AVATARS_DIR / f"{agent_id}-meet.jpg",
+            AVATARS_DIR / f"{agent_id}.png",
+            AVATARS_DIR / f"{agent_id}.jpg",
+        ]
+        path = next((p for p in candidates if p.exists() and p.stat().st_size > 1024), None)
     if path is None:
         logger.warning("No avatar found for agent=%s, camera-out will be blank", agent_id)
         return None
@@ -298,7 +316,11 @@ async def run_agent(args: argparse.Namespace) -> None:
     # Pre-load the profile picture frame so we can push it the moment
     # we join (and again when any new human arrives, so late joiners
     # also see the static image).
-    avatar_frame = load_avatar_frame(agent, size=PROFILE_PIC_SIZE)
+    avatar_frame = load_avatar_frame(
+        agent,
+        size=PROFILE_PIC_SIZE,
+        explicit_path=getattr(args, "avatar_path", None),
+    )
 
     @transport.event_handler("on_joined")
     async def on_joined(transport, data):
@@ -314,6 +336,21 @@ async def run_agent(args: argparse.Namespace) -> None:
         if avatar_frame is not None:
             await transport.send_image(avatar_frame)
             logger.info("Pushed profile picture to camera-out")
+        # Ready handshake for meet-cli. Printed on stdout AFTER the bot
+        # has actually joined the Daily room, so the CLI can mark the
+        # DB session live only once the meeting is reachable. The earlier
+        # pre-run print happened before runner.run(task), which meant a
+        # crashed bot still left the session marked live.
+        try:
+            print(json.dumps({
+                "event": "joined",
+                "room_url": args.room_url,
+                "agent": agent,
+                "mode": mode,
+                "voice": voice,
+            }), flush=True)
+        except Exception as exc:
+            logger.warning("Failed to emit joined handshake: %s", exc)
 
     @transport.event_handler("on_participant_joined")
     async def on_participant_joined(transport, participant):
@@ -337,34 +374,85 @@ async def run_agent(args: argparse.Namespace) -> None:
             human_participants.discard(pid)
             logger.info("Participant left: %s (remaining=%d)", pid, len(human_participants))
             if not human_participants:
-                logger.info("All humans have left. Cancelling pipeline.")
+                logger.info("All humans have left. Cleaning up meeting.")
+                await cleanup_meeting(args.session_id)
                 await task.cancel()
 
-    # Print a ready line so meet-cli knows the agent is connected and
-    # can write the meet_sessions row with status=live.
-    print(json.dumps({
-        "ok": True,
-        "status": "starting",
-        "room_url": args.room_url,
-        "agent": agent,
-        "mode": mode,
-        "voice": voice,
-    }), flush=True)
+    # NOTE: the meet-cli readiness handshake is emitted from the
+    # on_joined event handler above, not here. Printing a "starting"
+    # line before `runner.run(task)` would let meet-cli mark the DB
+    # session live even when the Daily join later failed, leaving
+    # ghost rows pointing at rooms with no bot.
 
     logger.info("Starting Daily agent: room=%s agent=%s mode=%s voice=%s",
                 args.room_url, agent, mode, voice)
-    await runner.run(task)
+    try:
+        await runner.run(task)
+    finally:
+        # Defensive cleanup for shutdown paths that didn't go through
+        # on_participant_left (e.g. idle_timeout, Gemini Live error).
+        if args.session_id:
+            await cleanup_meeting(args.session_id)
     logger.info("Daily agent shut down cleanly.")
 
 
+_cleanup_done = False
+
+
+async def cleanup_meeting(session_id: str | None) -> None:
+    """Run `meet-cli leave` to delete the Daily room and mark the
+    meet_sessions row as left. Idempotent: subsequent calls are noops."""
+    global _cleanup_done
+    if _cleanup_done or not session_id:
+        return
+    _cleanup_done = True
+    cli_path = Path(__file__).resolve().parent.parent / "dist" / "meet-cli.js"
+    if not cli_path.exists():
+        logger.warning("meet-cli.js not found at %s, skipping cleanup", cli_path)
+        return
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "node", str(cli_path), "leave", "--session-id", session_id,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=15.0)
+            logger.info("meet-cli leave rc=%s stdout=%s",
+                        proc.returncode,
+                        (stdout or b"").decode(errors="replace").strip()[:200])
+        except asyncio.TimeoutError:
+            try:
+                proc.kill()
+                await proc.wait()
+            except Exception:
+                pass
+            logger.warning("meet-cli leave timed out for session=%s", session_id)
+    except Exception as exc:
+        logger.warning("meet-cli leave failed for session=%s: %s", session_id, exc)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="LeonClaw Daily.co voice agent")
+    parser = argparse.ArgumentParser(description="ClaudeClaw Daily.co voice agent")
     parser.add_argument("--room-url", required=True, help="Full Daily room URL")
-    parser.add_argument("--agent", default="main", help="Which LeonClaw agent persona to use")
+    parser.add_argument("--agent", default="main", help="Which ClaudeClaw agent persona to use")
     parser.add_argument("--mode", default="direct", choices=["direct", "auto"])
     parser.add_argument("--token", default=None, help="Optional Daily meeting token")
     parser.add_argument("--bot-name", default=None, help="Display name in the Daily UI")
     parser.add_argument("--brief", default=None, help="Path to a pre-flight briefing file")
+    parser.add_argument(
+        "--avatar-path",
+        default=None,
+        help="Absolute path to the avatar PNG/JPG to render on the camera-out "
+             "tile. Resolved Node-side via avatars.ts so user uploads and "
+             "Telegram-cached photos take priority over bundled meet art.",
+    )
+    parser.add_argument(
+        "--session-id",
+        default=None,
+        help="meet_sessions row id (Daily room id). Used to call meet-cli leave "
+             "when all humans leave, so the DB row + Daily room get cleaned up.",
+    )
     args = parser.parse_args()
 
     try:

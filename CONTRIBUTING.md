@@ -1,4 +1,4 @@
-# Contributing to LeonClaw OS
+# Contributing to ClaudeClaw
 
 ## Adding a migration
 

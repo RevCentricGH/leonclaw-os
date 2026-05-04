@@ -184,15 +184,13 @@ describe('file sending: mocked Grammy context', () => {
 
 describe('file sending: real Telegram API', () => {
   const { token, chatId } = loadEnv();
-  // Opt-in: these tests send real messages to the configured Telegram chat.
-  // Require RUN_LIVE_TELEGRAM_TESTS=1 so a plain `npm run test` is quiet.
-  const canRunRealTests = !!(token && chatId && process.env.RUN_LIVE_TELEGRAM_TESTS === '1');
+  const canRunRealTests = !!(token && chatId);
 
   // Create a real temp file for the test
   let tmpFile: string;
 
   beforeEach(() => {
-    tmpFile = createTempFile('claudeclaw-test.txt', `LeonClaw OS file send test\nTimestamp: ${new Date().toISOString()}\nThis file was sent by an automated integration test.`);
+    tmpFile = createTempFile('claudeclaw-test.txt', `ClaudeClaw file send test\nTimestamp: ${new Date().toISOString()}\nThis file was sent by an automated integration test.`);
   });
 
   afterEach(() => {

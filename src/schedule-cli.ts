@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * LeonClaw OS Schedule CLI
+ * ClaudeClaw Schedule CLI
  *
  * Used by your Claude assistant via the Bash tool to manage scheduled tasks.
  *

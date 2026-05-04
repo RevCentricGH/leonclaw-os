@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * LeonClaw OS Mission CLI
+ * ClaudeClaw Mission CLI
  *
  * Used by Claude assistants to create and manage one-shot mission tasks
  * that are picked up and executed by the target agent's scheduler.
@@ -48,19 +48,12 @@ const priorityArg = priorityFlagIdx !== -1
   ? parseInt(process.argv[priorityFlagIdx + 1] ?? '0', 10)
   : 5;
 
-// Parse --timeout flag (seconds → ms, floor 60s)
-const timeoutFlagIdx = process.argv.indexOf('--timeout');
-const timeoutFlag = timeoutFlagIdx !== -1 ? process.argv[timeoutFlagIdx + 1] : null;
-const timeoutMs: number | null = timeoutFlag
-  ? Math.max(60_000, parseInt(timeoutFlag, 10) * 1000)
-  : null;
-
 // Who created this task
 const createdBy = process.env.CLAUDECLAW_AGENT_ID ?? 'main';
 
 // Clean argv: remove all flag pairs
 const flagIndices = new Set<number>();
-[agentFlagIdx, titleFlagIdx, statusFlagIdx, priorityFlagIdx, timeoutFlagIdx].forEach(idx => {
+[agentFlagIdx, titleFlagIdx, statusFlagIdx, priorityFlagIdx].forEach(idx => {
   if (idx !== -1) { flagIndices.add(idx); flagIndices.add(idx + 1); }
 });
 const cleanedArgv = process.argv.filter((_, i) => !flagIndices.has(i));
@@ -83,13 +76,12 @@ switch (command) {
     }
     const title = titleArg || prompt.slice(0, 60);
     const id = randomBytes(4).toString('hex');
-    createMissionTask(id, title, prompt, targetAgent ?? null, createdBy, priorityArg, timeoutMs);
+    createMissionTask(id, title, prompt, targetAgent ?? null, createdBy, priorityArg);
 
     console.log(`Mission task created: ${id}`);
     console.log(`  Title:    ${title}`);
     console.log(`  Agent:    ${targetAgent || 'unassigned (use dashboard to assign)'}`);
     console.log(`  Priority: ${priorityArg}`);
-    if (timeoutMs) console.log(`  Timeout:  ${Math.round(timeoutMs / 1000)}s`);
     console.log(`  Prompt:   ${prompt.slice(0, 100)}${prompt.length > 100 ? '...' : ''}`);
     break;
   }

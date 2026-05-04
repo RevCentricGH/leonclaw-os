@@ -607,25 +607,76 @@ Extract the YAML block from Tab 9. Determine the client slug from the `client_sl
 target path: ~/rc-automations/pipeline/clients/{client_slug}.yaml
 ```
 
-Use the Write tool to write it. If the file already exists, overwrite it. After writing, confirm with:
+First check if the target directory exists:
+
+```bash
+test -d ~/rc-automations/pipeline/clients && echo "exists" || echo "missing"
+```
+
+If it exists: use the Write tool to write the file. If it already exists, overwrite it. Confirm with:
 
 ```
 Written to pipeline/clients/{client_slug}.yaml — client is pipeline-ready.
 ```
 
-Do NOT skip this step or tell the user to do it manually. The whole point is that SPOT generation immediately wires the client into the pipeline.
-
-### Step 2 — Tell the user what to do with the Google Doc
+If it does not exist: skip the write and instead print:
 
 ```
-1. Open Google Docs and create a new doc titled "[Client Name] Single Point of Truth"
-2. Click Insert → Tabs to enable tabs (or right-click in the left sidebar)
-3. Create 9 tabs: Campaign Status / Campaign Brief / Company Overview / Problem Solution / ICP & Buyer Persona / Competitor Overview / Objection Handling / Screenplay / Automation Config
-4. Paste each content block into the matching tab
-5. For the Screenplay tab, run the revcentric-cold-calling-screenplay skill
-
-Save in the RC Clients folder in the RevCentric Shared Drive.
+rc-automations not found locally — paste this YAML into pipeline/clients/{client_slug}.yaml manually:
+[YAML block]
 ```
+
+### Step 2 — Generate the .docx file
+
+After generating all 9 tabs, write and run a Python script that produces a formatted .docx.
+
+**Check / install python-docx:**
+```bash
+python3 -c "import docx" 2>/dev/null || pip install python-docx
+```
+
+**Write a script to `/tmp/generate_spot_{client_slug}.py`** using python-docx:
+
+```python
+from docx import Document
+from docx.shared import Pt
+import os
+
+doc = Document()
+
+# Cover title
+doc.add_heading('{Client Name} — Single Point of Truth', 0)
+doc.add_paragraph('RevCentric Internal | Generated: {date}')
+
+# For each tab 1–9:
+#   doc.add_heading('Tab N — {Tab Name}', 1)   ← H1 for tab title
+#   doc.add_heading('{Sub-section heading}', 2) ← H2 for sub-sections
+#   doc.add_paragraph('{body text}')            ← normal text for content
+
+# For Tab 6 direct competitor table and Tab 7 objection table:
+#   table = doc.add_table(rows=1, cols=N)
+#   table.style = 'Table Grid'
+#   hdr = table.rows[0].cells
+#   hdr[0].text = 'Column A'; hdr[1].text = 'Column B'; ...
+#   row = table.add_row().cells
+#   row[0].text = '...'; row[1].text = '...'
+
+doc.save(os.path.expanduser('~/Desktop/{client_slug}_SPOT.docx'))
+print('Saved.')
+```
+
+Populate the script with the actual generated content from all 9 tabs, then run it:
+
+```bash
+python3 /tmp/generate_spot_{client_slug}.py
+```
+
+Confirm with:
+```
+.docx saved to ~/Desktop/{client_slug}_SPOT.docx — open in Word or upload to Google Drive to edit.
+```
+
+Note: Tab 8 (Screenplay) body text should just say: "Run the revcentric-cold-calling-screenplay skill and paste output here."
 
 ### Step 3 — Flag any [TBD] blockers
 

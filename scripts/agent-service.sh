@@ -1,5 +1,5 @@
 #!/bin/bash
-# LeonClaw OS Agent Service Manager
+# ClaudeClaw Agent Service Manager
 # Installs/uninstalls a launchd plist (macOS) or systemd unit (Linux) for an agent.
 #
 # Usage:
@@ -80,7 +80,7 @@ else
     mkdir -p "$UNIT_DIR"
     cat > "$UNIT_PATH" << UNIT
 [Unit]
-Description=LeonClaw OS Agent: ${AGENT_ID}
+Description=ClaudeClaw Agent: ${AGENT_ID}
 After=network.target
 
 [Service]

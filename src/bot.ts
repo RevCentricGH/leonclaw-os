@@ -1,11 +1,9 @@
-import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { Api, Bot, Context, InputFile, RawApi } from 'grammy';
 
 import { runAgent, runAgentWithRetry, UsageInfo, AgentProgressEvent } from './agent.js';
-import { isAgentRunning } from './agent-create.js';
 import { AgentError } from './errors.js';
 import {
   AGENT_ID,
@@ -18,7 +16,6 @@ import {
   activeBotToken,
   agentDefaultModel,
   agentMcpAllowlist,
-  agentSkillsAllowlist,
   agentSystemPrompt,
   TYPING_REFRESH_MS,
   AGENT_TIMEOUT_MS,
@@ -31,10 +28,9 @@ import {
   PROTECTED_ENV_VARS,
   DAILY_COST_BUDGET,
   HOURLY_TOKEN_BUDGET,
-  MEMORY_NOTIFY,
   PROJECT_ROOT,
 } from './config.js';
-import { clearSession, createMissionTask, getMissionTask, getRecentConversation, getRecentMemories, getRecentTaskOutputs, getSession, getSessionConversation, logToHiveMind, pinMemory, unpinMemory, setSession, lookupWaChatId, saveWaMessageMap, saveTokenUsage, saveCompactionEvent, getCompactionCount } from './db.js';
+import { clearSession, getRecentConversation, getRecentMemories, getRecentTaskOutputs, getSession, getSessionConversation, logToHiveMind, pinMemory, unpinMemory, setSession, lookupWaChatId, saveWaMessageMap, saveTokenUsage, saveCompactionEvent, getCompactionCount } from './db.js';
 import { logger } from './logger.js';
 import { downloadMedia, buildPhotoMessage, buildDocumentMessage, buildVideoMessage } from './media.js';
 import { buildMemoryContext, evaluateMemoryRelevance, saveConversationTurn, shouldNudgeMemory, MEMORY_NUDGE_TEXT } from './memory.js';
@@ -281,21 +277,38 @@ export interface ExtractResult {
  * Extract [SEND_FILE:path] and [SEND_PHOTO:path] markers from Claude's response.
  * Supports optional captions via pipe: [SEND_FILE:/path/to/file.pdf|Here's your report]
  *
+ * Tolerant of common malformed variants observed in the wild:
+ *   - Pipe used as the primary separator instead of colon
+ *     ([SEND_PHOTO|https://...] or SEND_PHOTO|https://...)
+ *   - Missing surrounding brackets entirely
+ *   - http(s) URLs in addition to filesystem paths
+ *
  * Returns the cleaned text (markers stripped) and an array of file descriptors.
  */
 export function extractFileMarkers(text: string): ExtractResult {
   const files: FileMarker[] = [];
 
-  const pattern = /\[SEND_(FILE|PHOTO):([^\]\|]+)(?:\|([^\]]*))?\]/g;
+  // Canonical bracketed form: [SEND_FILE:/abs/path|caption]
+  // Tolerant variants: pipe instead of colon, optional brackets, URL paths.
+  // The bracketed form is preferred (it's documented in CLAUDE.md), but the
+  // bare/pipe forms are recognized so a malformed agent reply still gets
+  // its image rendered instead of leaking the raw command string into chat.
+  const patterns: RegExp[] = [
+    /\[SEND_(FILE|PHOTO)[:|]\s*([^\]|]+?)(?:\s*\|\s*([^\]]*))?\]/g,
+    /(?:^|\s)SEND_(FILE|PHOTO)\s*[:|]\s*((?:https?:\/\/|\/)[^\s|\]]+)(?:\s*\|\s*([^\n]+))?/g,
+  ];
 
-  const cleaned = text.replace(pattern, (_, kind: string, filePath: string, caption?: string) => {
-    files.push({
-      type: kind === 'PHOTO' ? 'photo' : 'document',
-      filePath: filePath.trim(),
-      caption: caption?.trim() || undefined,
+  let cleaned = text;
+  for (const pattern of patterns) {
+    cleaned = cleaned.replace(pattern, (_match: string, kind: string, filePath: string, caption?: string) => {
+      files.push({
+        type: kind === 'PHOTO' ? 'photo' : 'document',
+        filePath: filePath.trim(),
+        caption: caption?.trim() || undefined,
+      });
+      return '';
     });
-    return '';
-  });
+  }
 
   // Collapse extra blank lines left by stripped markers
   const trimmed = cleaned.replace(/\n{3,}/g, '\n\n').trim();
@@ -608,7 +621,7 @@ async function handleMessage(ctx: Context, message: string, forceVoiceReply = fa
     if (result.aborted) {
       setProcessing(chatIdStr, false);
       const msg = result.text === null
-        ? `Timed out after ${Math.round(AGENT_TIMEOUT_MS / 1000)}s. Raise AGENT_TIMEOUT_MS in your .env (default is 1800000 = 30 min) and restart, or break the task into smaller steps.`
+        ? `Timed out after ${Math.round(AGENT_TIMEOUT_MS / 1000)}s. The task may have been too complex or a command got stuck. Try breaking it into smaller steps.`
         : 'Stopped.';
       emitChatEvent({ type: 'assistant_message', chatId: chatIdStr, content: msg, source: 'telegram' });
       await ctx.reply(msg);
@@ -771,18 +784,10 @@ async function handleMessage(ctx: Context, message: string, forceVoiceReply = fa
 /**
  * Auto-discover user-invocable skills from ~/.claude/skills/.
  * Reads SKILL.md frontmatter for name + description when user_invocable: true.
- *
- * If `allowlist` is provided (from agent.yaml's skills_allowlist field), only
- * skills whose normalised name appears in the list are returned. Lets a
- * team-scoped bot expose a restricted skill surface while the global skills
- * directory stays intact.
  */
-function discoverSkillCommands(allowlist?: string[]): Array<{ command: string; description: string }> {
+function discoverSkillCommands(): Array<{ command: string; description: string }> {
   const skillsDir = path.join(os.homedir(), '.claude', 'skills');
   const commands: Array<{ command: string; description: string }> = [];
-  const allow = allowlist && allowlist.length > 0
-    ? new Set(allowlist.map((s) => s.toLowerCase()))
-    : null;
 
   let entries: string[];
   try {
@@ -813,9 +818,6 @@ function discoverSkillCommands(allowlist?: string[]): Array<{ command: string; d
       const name = nameMatch[1].trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
       if (!name) continue;
 
-      // Honour per-agent allowlist when set
-      if (allow && !allow.has(name)) continue;
-
       // Extract description (truncate to 256 chars for Telegram limit)
       const descMatch = fm.match(/^description:\s*(.+)$/m);
       const desc = descMatch
@@ -839,7 +841,7 @@ export function createBot(): Bot {
 
   const bot = new Bot(token);
 
-  // Reject group chats. LeonClaw OS only works in private (1-on-1) chats.
+  // Reject group chats. ClaudeClaw only works in private (1-on-1) chats.
   // This prevents message leakage if the bot is added to a group.
   bot.use(async (ctx, next) => {
     if (ctx.chat && ctx.chat.type !== 'private') {
@@ -853,7 +855,7 @@ export function createBot(): Bot {
   // Register callback for high-importance memory notifications.
   // When a memory with importance >= 0.8 is created, notify via Telegram
   // so the user can /pin it if it should be permanent.
-  if (ALLOWED_CHAT_ID && MEMORY_NOTIFY) {
+  if (ALLOWED_CHAT_ID) {
     setHighImportanceCallback((memoryId, summary, importance) => {
       const msg = `🧠 New memory #${memoryId} [${importance.toFixed(1)}]: ${summary.slice(0, 200)}\n\n/pin ${memoryId} to make permanent`;
       bot.api.sendMessage(ALLOWED_CHAT_ID, msg).catch(() => {});
@@ -879,20 +881,17 @@ export function createBot(): Bot {
     { command: 'lock', description: 'Lock session (requires PIN to unlock)' },
     { command: 'status', description: 'Show security status' },
   ];
-  const skillCommands = discoverSkillCommands(agentSkillsAllowlist);
+  const skillCommands = discoverSkillCommands();
   const allCommands = [...builtInCommands, ...skillCommands].slice(0, 100); // Telegram limit: 100 commands
-  // Cache for deterministic slash-command dispatch in the text handler.
-  // Lowercased, no leading slash.
-  const userInvocableSkills = new Set<string>(skillCommands.map((s) => s.command));
   bot.api.setMyCommands(allCommands)
-    .then(() => logger.info({ count: skillCommands.length, allowlisted: !!agentSkillsAllowlist }, 'Registered %d skill commands with Telegram', skillCommands.length))
+    .then(() => logger.info({ count: skillCommands.length }, 'Registered %d skill commands with Telegram', skillCommands.length))
     .catch((err) => logger.warn({ err }, 'Failed to register bot commands with Telegram'));
 
   // /help — list available commands
   bot.command('help', (ctx) => {
     if (!isAuthorised(ctx.chat!.id)) return;
     return ctx.reply(
-      'LeonClaw OS — Commands\n\n' +
+      'ClaudeClaw — Commands\n\n' +
       '/newchat — Start a new Claude session\n' +
       '/respin — Reload recent context\n' +
       '/voice — Toggle voice mode on/off\n' +
@@ -926,7 +925,7 @@ export function createBot(): Bot {
     if (AGENT_ID !== 'main') {
       return ctx.reply(`${AGENT_ID.charAt(0).toUpperCase() + AGENT_ID.slice(1)} agent online.`);
     }
-    return ctx.reply('LeonClaw OS online. What do you need?');
+    return ctx.reply('ClaudeClaw online. What do you need?');
   });
 
   // /newchat — clear Claude session, start fresh + auto-commit to hive mind
@@ -1068,7 +1067,7 @@ export function createBot(): Bot {
   bot.command('memory', async (ctx) => {
     if (await replyIfLocked(ctx)) return;
     const chatId = ctx.chat!.id.toString();
-    const recent = getRecentMemories(chatId, 10, AGENT_ID);
+    const recent = getRecentMemories(chatId, 10);
     if (recent.length === 0) {
       await ctx.reply('No memories yet.');
       return;
@@ -1280,32 +1279,8 @@ export function createBot(): Bot {
     const chatIdStr = ctx.chat!.id.toString();
 
     if (text.startsWith('/')) {
-      const firstToken = text.split(/[\s@]/)[0].toLowerCase();
-      if (OWN_COMMANDS.has(firstToken)) return; // already handled by bot.command() above
-
-      // Deterministic skill dispatch: if the slash command matches a
-      // user-invocable skill (optionally filtered by agent.yaml's
-      // skills_allowlist), rewrite the prompt to an explicit Skill-tool
-      // directive instead of hoping the agent loop infers intent.
-      const skillName = firstToken.slice(1).split('@')[0];
-      if (skillName && userInvocableSkills.has(skillName)) {
-        if (!isAuthorised(ctx.chat!.id)) return;
-        if (isLocked()) {
-          if (unlock(text)) {
-            await ctx.reply('Unlocked. Session active.');
-          } else {
-            await ctx.reply('Session locked. Send your PIN to unlock.');
-          }
-          return;
-        }
-        touchActivity();
-        const rawArgs = text.slice(firstToken.length).trim();
-        const directive = rawArgs
-          ? `Invoke the \`${skillName}\` skill now via the Skill tool. Follow its SKILL.md instructions exactly. Do not ask for confirmation. Arguments: ${rawArgs}`
-          : `Invoke the \`${skillName}\` skill now via the Skill tool. Follow its SKILL.md instructions exactly. Do not ask for confirmation.`;
-        messageQueue.enqueue(chatIdStr, () => handleMessage(ctx, directive));
-        return;
-      }
+      const cmd = text.split(/[\s@]/)[0].toLowerCase();
+      if (OWN_COMMANDS.has(cmd)) return; // already handled by bot.command() above
     }
 
     // ── Security: kill phrase + lock check (before any state machines) ──
@@ -1483,23 +1458,17 @@ export function createBot(): Bot {
 
   // Voice messages — real transcription via Groq Whisper
   bot.on('message:voice', async (ctx) => {
-    const chatId = ctx.chat!.id;
-    if (!isAuthorised(chatId)) return;
     const caps = voiceCapabilities();
     if (!caps.stt) {
       await ctx.reply('Voice transcription not configured. Add GROQ_API_KEY to .env');
       return;
     }
+    const chatId = ctx.chat!.id;
+    if (!isAuthorised(chatId)) return;
     if (!ALLOWED_CHAT_ID) {
       await ctx.reply(
-        `Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart LeonClaw OS.`,
+        `Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart ClaudeClaw OS.`,
       );
-      return;
-    }
-    // Telegram Bot API caps downloads at 20MB regardless of server-side size.
-    const voiceSize = ctx.message.voice.file_size;
-    if (voiceSize && voiceSize > 20 * 1024 * 1024) {
-      await ctx.reply('Voice message is over 20 MB (Telegram bot download cap). Try a shorter clip.');
       return;
     }
 
@@ -1517,54 +1486,13 @@ export function createBot(): Bot {
     }
   });
 
-  // Audio files — transcription via the same Whisper path as voice notes.
-  // Telegram emits message:audio for music files and uploaded audio that
-  // wasn't recorded as a voice note (podcast clips, recorded meetings,
-  // an .mp3 dragged in from Finder). Without this handler, those files
-  // fall through to message:document and get passed to Claude as opaque
-  // file context rather than a transcript. The only difference from the
-  // voice handler is which Telegram field holds the file_id.
-  bot.on('message:audio', async (ctx) => {
-    const chatId = ctx.chat!.id;
-    if (!isAuthorised(chatId)) return;
-    const caps = voiceCapabilities();
-    if (!caps.stt) {
-      await ctx.reply('Audio transcription not configured. Add GROQ_API_KEY to .env');
-      return;
-    }
-    if (!ALLOWED_CHAT_ID) {
-      await ctx.reply(
-        `Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart LeonClaw OS.`,
-      );
-      return;
-    }
-    // Audio uploads hit the 20MB bot download cap more often than voice notes.
-    const audioSize = ctx.message.audio.file_size;
-    if (audioSize && audioSize > 20 * 1024 * 1024) {
-      await ctx.reply('Audio file is over 20 MB (Telegram bot download cap). Split or compress first.');
-      return;
-    }
-
-    try {
-      const fileId = ctx.message.audio.file_id;
-      const localPath = await downloadTelegramFile(activeBotToken, fileId, UPLOADS_DIR);
-      const transcribed = await transcribeAudio(localPath);
-      const wantsVoiceBack = /\b(respond (with|via|in) voice|send (me )?(a )?voice( note| back)?|voice reply|reply (with|via) voice)\b/i.test(transcribed);
-      const chatIdStr = ctx.chat!.id.toString();
-      messageQueue.enqueue(chatIdStr, () => handleMessage(ctx, `[Voice transcribed]: ${transcribed}`, wantsVoiceBack));
-    } catch (err) {
-      logger.error({ err }, 'Audio transcription failed');
-      await ctx.reply('Could not transcribe audio file. Try again.');
-    }
-  });
-
   // Photos — download and pass to Claude
   bot.on('message:photo', async (ctx) => {
     const chatId = ctx.chat!.id;
     if (!isAuthorised(chatId)) return;
     if (!ALLOWED_CHAT_ID) {
       await ctx.reply(
-        `Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart LeonClaw OS.`,
+        `Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart ClaudeClaw OS.`,
       );
       return;
     }
@@ -1587,7 +1515,7 @@ export function createBot(): Bot {
     if (!isAuthorised(chatId)) return;
     if (!ALLOWED_CHAT_ID) {
       await ctx.reply(
-        `Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart LeonClaw OS.`,
+        `Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart ClaudeClaw OS.`,
       );
       return;
     }
@@ -1610,7 +1538,7 @@ export function createBot(): Bot {
     const chatId = ctx.chat!.id;
     if (!isAuthorised(chatId)) return;
     if (!ALLOWED_CHAT_ID) {
-      await ctx.reply(`Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart LeonClaw OS.`);
+      await ctx.reply(`Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart ClaudeClaw OS.`);
       return;
     }
 
@@ -1632,7 +1560,7 @@ export function createBot(): Bot {
     const chatId = ctx.chat!.id;
     if (!isAuthorised(chatId)) return;
     if (!ALLOWED_CHAT_ID) {
-      await ctx.reply(`Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart LeonClaw OS.`);
+      await ctx.reply(`Your chat ID is ${chatId}.\n\nAdd this to your .env:\n\nALLOWED_CHAT_ID=${chatId}\n\nThen restart ClaudeClaw OS.`);
       return;
     }
 
@@ -1658,105 +1586,8 @@ export function createBot(): Bot {
 }
 
 /**
- * Dispatch a dashboard chat message to another agent's process via the
- * mission task queue. The target agent claims the task from its own
- * scheduler loop, runs it with its own model / system prompt / memory /
- * session, and saves the turns to conversation_log under its agent_id.
- *
- * This function watches the task for completion and emits SSE chat events
- * so the dashboard frontend renders the response in the right tab.
- */
-export function dispatchDashboardChatToAgent(
-  text: string,
-  targetAgentId: string,
-): void {
-  if (!ALLOWED_CHAT_ID) return;
-  const chatIdStr = ALLOWED_CHAT_ID;
-
-  emitChatEvent({
-    type: 'user_message',
-    chatId: chatIdStr,
-    agentId: targetAgentId,
-    content: text,
-    source: 'dashboard',
-  });
-
-  // Dead-agent short-circuit. If the target agent's process isn't running,
-  // the chat mission will never be claimed. Fail fast instead of waiting
-  // out the 10-minute poller.
-  if (targetAgentId !== AGENT_ID && !isAgentRunning(targetAgentId)) {
-    emitChatEvent({
-      type: 'error',
-      chatId: chatIdStr,
-      agentId: targetAgentId,
-      content: `Agent "${targetAgentId}" isn't running. Start it from Mission Control first.`,
-    });
-    return;
-  }
-
-  // Per-agent processing indicator. Doesn't touch the global processing
-  // state because the work runs in another process.
-  emitChatEvent({ type: 'processing', chatId: chatIdStr, agentId: targetAgentId, processing: true });
-
-  const taskId = crypto.randomBytes(4).toString('hex');
-  const title = text.length > 60 ? text.slice(0, 60) + '...' : text;
-  // Chat-type mission: no per-task timeout override (pass null so scheduler
-  // falls back to MISSION_TIMEOUT_MS), type='chat', chat_id carries scope.
-  createMissionTask(taskId, title, text, targetAgentId, AGENT_ID, 5, null, 'chat', chatIdStr);
-
-  logger.info(
-    { taskId, targetAgentId, chatId: chatIdStr, messageLen: text.length },
-    'Dispatched dashboard chat to agent process',
-  );
-
-  const watchStart = Date.now();
-  const watchTimeoutMs = 10 * 60 * 1000;
-  const pollMs = 1000;
-  const poller = setInterval(() => {
-    const task = getMissionTask(taskId);
-    if (!task) {
-      clearInterval(poller);
-      return;
-    }
-    if (task.status === 'completed') {
-      clearInterval(poller);
-      emitChatEvent({ type: 'processing', chatId: chatIdStr, agentId: targetAgentId, processing: false });
-      emitChatEvent({
-        type: 'assistant_message',
-        chatId: chatIdStr,
-        agentId: targetAgentId,
-        content: task.result ?? 'Done.',
-        source: 'dashboard',
-      });
-      return;
-    }
-    if (task.status === 'failed' || task.status === 'cancelled') {
-      clearInterval(poller);
-      emitChatEvent({ type: 'processing', chatId: chatIdStr, agentId: targetAgentId, processing: false });
-      emitChatEvent({
-        type: 'error',
-        chatId: chatIdStr,
-        agentId: targetAgentId,
-        content: task.error ?? `Agent task ${task.status}.`,
-      });
-      return;
-    }
-    if (Date.now() - watchStart > watchTimeoutMs) {
-      clearInterval(poller);
-      emitChatEvent({ type: 'processing', chatId: chatIdStr, agentId: targetAgentId, processing: false });
-      emitChatEvent({
-        type: 'error',
-        chatId: chatIdStr,
-        agentId: targetAgentId,
-        content: 'Agent did not respond in time. Task left running in the background.',
-      });
-    }
-  }, pollMs);
-}
-
-/**
- * Process a message sent from the dashboard web UI for the hosting agent.
- * Sub-agent messages go via dispatchDashboardChatToAgent above.
+ * Process a message sent from the dashboard web UI.
+ * Runs the agent pipeline and relays the response to Telegram.
  * Response is delivered via SSE (fire-and-forget from the caller's perspective).
  */
 export async function processMessageFromDashboard(
@@ -1779,8 +1610,8 @@ async function processDashboardMessage(
   text: string,
   chatIdStr: string,
 ): Promise<void> {
-  emitChatEvent({ type: 'user_message', chatId: chatIdStr, agentId: AGENT_ID, content: text, source: 'dashboard' });
-  setProcessing(chatIdStr, true, AGENT_ID);
+  emitChatEvent({ type: 'user_message', chatId: chatIdStr, content: text, source: 'dashboard' });
+  setProcessing(chatIdStr, true);
 
   try {
     const sessionId = getSession(chatIdStr, AGENT_ID);
@@ -1803,7 +1634,7 @@ async function processDashboardMessage(
     const fullMessage = dashParts.join('\n\n');
 
     const onProgress = (event: AgentProgressEvent) => {
-      emitChatEvent({ type: 'progress', chatId: chatIdStr, agentId: AGENT_ID, description: event.description });
+      emitChatEvent({ type: 'progress', chatId: chatIdStr, description: event.description });
     };
 
     const abortCtrl = new AbortController();
@@ -1832,7 +1663,7 @@ async function processDashboardMessage(
       const msg = result.text === null
         ? `Timed out after ${Math.round(AGENT_TIMEOUT_MS / 1000)}s. Try breaking the task into smaller steps.`
         : 'Stopped.';
-      emitChatEvent({ type: 'assistant_message', chatId: chatIdStr, agentId: AGENT_ID, content: msg, source: 'dashboard' });
+      emitChatEvent({ type: 'assistant_message', chatId: chatIdStr, content: msg, source: 'dashboard' });
       return;
     }
 
@@ -1848,9 +1679,63 @@ async function processDashboardMessage(
       void evaluateMemoryRelevance(dashSurfacedIds, dashSummaries, text, rawResponse).catch(() => {});
     }
 
-    // Emit assistant response to SSE clients. Dashboard chat and Telegram
-    // are distinct channels now — no Telegram mirror here.
-    emitChatEvent({ type: 'assistant_message', chatId: chatIdStr, agentId: AGENT_ID, content: rawResponse, source: 'dashboard' });
+    // Strip SEND_FILE / SEND_PHOTO markers BEFORE emitting to the chat
+    // SSE so the dashboard bubble doesn't show raw "[SEND_PHOTO|url]"
+    // text. Any photo URLs end up as separate assistant_photo events
+    // (handled below) so the SPA can inline-render them.
+    const { text: responseText, files: dashFileMarkers } = extractFileMarkers(rawResponse);
+    const cleanedForChat = responseText || (dashFileMarkers.length > 0 ? '' : 'Done.');
+
+    // Emit assistant response to SSE clients
+    if (cleanedForChat) {
+      emitChatEvent({ type: 'assistant_message', chatId: chatIdStr, content: cleanedForChat, source: 'dashboard' });
+    }
+    // Emit one assistant_photo per http(s) photo URL the agent referenced.
+    // Filesystem paths (the standard for Telegram-bound files) are skipped
+    // here; they get handled by the Telegram leg below.
+    for (const f of dashFileMarkers) {
+      if (f.type !== 'photo') continue;
+      if (!/^https?:\/\//i.test(f.filePath)) continue;
+      emitChatEvent({
+        type: 'assistant_photo',
+        chatId: chatIdStr,
+        url: f.filePath,
+        caption: f.caption,
+        source: 'dashboard',
+      });
+    }
+
+    // Relay to Telegram so the user sees it there too. Wrap the relay
+    // in its own try/catch so a bad bot token (401 Unauthorized) does
+    // NOT bubble Telegram's raw error description into the chat feed.
+    // The dashboard already received the assistant message via SSE
+    // above; the Telegram leg is best-effort.
+    if (responseText) {
+      try {
+        for (const part of splitMessage(formatForTelegram(responseText))) {
+          await botApi.sendMessage(parseInt(chatIdStr), part, { parse_mode: 'HTML' });
+        }
+      } catch (relayErr: any) {
+        const code = relayErr?.error_code ?? relayErr?.status ?? null;
+        const desc = String(relayErr?.description ?? relayErr?.message ?? '').toLowerCase();
+        const looksAuth = code === 401 || desc.includes('unauthorized') || desc.includes('not authenticated');
+        if (looksAuth) {
+          logger.warn({ err: relayErr }, 'Telegram relay failed: bot token not authorized');
+          emitChatEvent({
+            type: 'error',
+            chatId: chatIdStr,
+            content: 'Telegram relay skipped: this bot token is not authorized. Update TELEGRAM_BOT_TOKEN in Settings or re-issue with @BotFather.',
+          });
+        } else {
+          logger.warn({ err: relayErr }, 'Telegram relay failed (non-auth)');
+          emitChatEvent({
+            type: 'error',
+            chatId: chatIdStr,
+            content: 'Could not relay reply to Telegram. The dashboard reply above is current.',
+          });
+        }
+      }
+    }
 
     // Log token usage
     if (result.usage) {
@@ -1874,9 +1759,9 @@ async function processDashboardMessage(
   } catch (err) {
     setActiveAbort(chatIdStr, null);
     logger.error({ err }, 'Dashboard message processing error');
-    emitChatEvent({ type: 'error', chatId: chatIdStr, agentId: AGENT_ID, content: 'Something went wrong. Check the logs.' });
+    emitChatEvent({ type: 'error', chatId: chatIdStr, content: 'Something went wrong. Check the logs.' });
   } finally {
-    setProcessing(chatIdStr, false, AGENT_ID);
+    setProcessing(chatIdStr, false);
   }
 }
 

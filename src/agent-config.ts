@@ -2,13 +2,35 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 
-import { CLAUDECLAW_CONFIG, PROJECT_ROOT, STORE_DIR } from './config.js';
+import { CLAUDECLAW_CONFIG, PROJECT_ROOT } from './config.js';
 import { readEnvFile } from './env.js';
 
-export const DEFAULT_MAIN_DESCRIPTION = 'Primary LeonClaw OS bot';
+// Shared roster path. Written by Node on startup and any time the agent
+// roster changes (new agent, deleted agent). Read by the Python Pipecat
+// voice stack so new agents propagate into voice War Room without a
+// full bot restart.
+export const WARROOM_ROSTER_PATH = '/tmp/warroom-agents.json';
 
-function mainConfigPath(): string {
-  return path.join(STORE_DIR, 'main-config.json');
+/** Single source of truth for "is this string a syntactically valid
+ *  agent id?". Lifted out of the various inline copies in the dashboard
+ *  HTTP layer so the avatar / chat / agent-files handlers all share one
+ *  definition. Lower-case alphanumerics plus `_` and `-`; `i` flag is
+ *  kept for backwards compatibility with the historical regex. */
+export const AGENT_ID_RE = /^[a-z0-9_-]+$/i;
+
+/** Cheap "does this agent exist on disk?" check. `main` always exists
+ *  (it's the root process); any other id needs an `agent.yaml` next to
+ *  resolveAgentDir(id). Returns false for syntactically invalid ids so
+ *  callers can use this as the only existence check they need. */
+export function agentExists(agentId: string): boolean {
+  if (!AGENT_ID_RE.test(agentId)) return false;
+  if (agentId === 'main') return true;
+  try {
+    const dir = resolveAgentDir(agentId);
+    return fs.existsSync(path.join(dir, 'agent.yaml'));
+  } catch {
+    return false;
+  }
 }
 
 export interface AgentConfig {
@@ -18,6 +40,11 @@ export interface AgentConfig {
   botToken: string;
   model?: string;
   mcpServers?: string[];
+  /** Per-agent war-room tool allowlist. Tokens are SDK tool names
+   *  ("Bash", "Write") or "mcp:<name>" entries to opt an MCP server in.
+   *  Overrides the defaults in warroom-tool-policy.ts. Unset = use
+   *  defaults. */
+  warroomTools?: string[];
   obsidian?: {
     vault: string;
     folders: string[];
@@ -29,11 +56,6 @@ export interface AgentConfig {
   /** Display name shown in the meeting ("Your Agent wants to join"). Falls
    *  back to the agent's name or id with first letter capitalized. */
   meetBotName?: string;
-  /** Restrict which user-invocable skills this bot exposes as slash
-   *  commands. When set, only these skill names appear in the Telegram
-   *  menu and are dispatchable via /<name>. When absent, the bot sees
-   *  every user_invocable skill under ~/.claude/skills/. */
-  skillsAllowlist?: string[];
 }
 
 /**
@@ -106,12 +128,13 @@ export function loadAgentConfig(agentId: string): AgentConfig {
   }
 
   const mcpServers = raw['mcp_servers'] as string[] | undefined;
+  // War-room tool policy override. If present in agent.yaml, this list
+  // overrides the per-agent default in warroom-tool-policy.ts. Tokens
+  // can be SDK tool names ("Bash", "Write") or "mcp:<name>" to opt that
+  // MCP server into the war-room session.
+  const warroomTools = raw['warroom_tools'] as string[] | undefined;
   const meetVoiceId = typeof raw['meet_voice_id'] === 'string' ? (raw['meet_voice_id'] as string) : undefined;
   const meetBotName = typeof raw['meet_bot_name'] === 'string' ? (raw['meet_bot_name'] as string) : undefined;
-  const rawSkills = raw['skills_allowlist'];
-  const skillsAllowlist = Array.isArray(rawSkills)
-    ? (rawSkills as unknown[]).filter((s): s is string => typeof s === 'string').map((s) => s.toLowerCase())
-    : undefined;
 
   return {
     name,
@@ -120,10 +143,10 @@ export function loadAgentConfig(agentId: string): AgentConfig {
     botToken,
     model,
     mcpServers,
+    warroomTools,
     obsidian,
     meetVoiceId,
     meetBotName,
-    skillsAllowlist,
   };
 }
 
@@ -136,49 +159,6 @@ export function setAgentModel(agentId: string, model: string): void {
   const raw = yaml.load(fs.readFileSync(configPath, 'utf-8')) as Record<string, unknown>;
   raw['model'] = model;
   fs.writeFileSync(configPath, yaml.dump(raw, { lineWidth: -1 }), 'utf-8');
-}
-
-/** Update the description field in an agent's agent.yaml file. */
-export function setAgentDescription(agentId: string, description: string): void {
-  const trimmed = description.trim();
-  if (!trimmed) throw new Error('description cannot be empty');
-
-  const agentDir = resolveAgentDir(agentId);
-  const configPath = path.join(agentDir, 'agent.yaml');
-  if (!fs.existsSync(configPath)) throw new Error(`Agent config not found: ${configPath}`);
-
-  const raw = yaml.load(fs.readFileSync(configPath, 'utf-8')) as Record<string, unknown>;
-  raw['description'] = trimmed;
-  fs.writeFileSync(configPath, yaml.dump(raw, { lineWidth: -1 }), 'utf-8');
-}
-
-/** Load the description for the main bot (persisted, editable). */
-export function getMainDescription(): string {
-  const configPath = mainConfigPath();
-  try {
-    if (!fs.existsSync(configPath)) return DEFAULT_MAIN_DESCRIPTION;
-    const raw = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as { description?: string };
-    const desc = (raw.description ?? '').trim();
-    return desc || DEFAULT_MAIN_DESCRIPTION;
-  } catch {
-    return DEFAULT_MAIN_DESCRIPTION;
-  }
-}
-
-/** Persist a description for the main bot. */
-export function setMainDescription(description: string): void {
-  const trimmed = description.trim();
-  if (!trimmed) throw new Error('description cannot be empty');
-
-  if (!fs.existsSync(STORE_DIR)) fs.mkdirSync(STORE_DIR, { recursive: true });
-
-  const configPath = mainConfigPath();
-  let raw: Record<string, unknown> = {};
-  if (fs.existsSync(configPath)) {
-    try { raw = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as Record<string, unknown>; } catch { raw = {}; }
-  }
-  raw['description'] = trimmed;
-  fs.writeFileSync(configPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
 }
 
 /** List all configured agent IDs (directories under agents/ with agent.yaml).
@@ -248,4 +228,34 @@ export function listAllAgents(): Array<{
   }
 
   return result;
+}
+
+/**
+ * Write the current agent roster to the path the Python Pipecat voice
+ * stack reads from. Call this:
+ *   - On main-bot startup (index.ts does this already)
+ *   - After creating or deleting an agent (agent-create flow)
+ *   - Before /warroom/text turns (orchestrator does this cheaply too)
+ *
+ * The file is read-only metadata: id, name, description. The voice
+ * server kills + respawns its subprocess when this changes if callers
+ * want the new roster to take effect immediately.
+ */
+export function refreshWarRoomRoster(): void {
+  try {
+    const ids = ['main', ...listAgentIds().filter((id) => id !== 'main')];
+    const roster = ids.map((id) => {
+      try {
+        if (id === 'main') return { id: 'main', name: 'Main', description: 'General ops and triage' };
+        const cfg = loadAgentConfig(id);
+        return { id, name: cfg.name || id, description: cfg.description || '' };
+      } catch {
+        return { id, name: id, description: '' };
+      }
+    });
+    fs.writeFileSync(WARROOM_ROSTER_PATH, JSON.stringify(roster, null, 2));
+  } catch {
+    // Non-fatal. Voice stack falls back to the built-in default roster
+    // if the file is missing.
+  }
 }

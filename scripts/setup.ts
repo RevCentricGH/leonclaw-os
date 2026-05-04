@@ -25,6 +25,31 @@ const PROJECT_ROOT = path.resolve(
   '..',
 );
 
+/**
+ * When a Windows step can't finish, print a copy-paste Claude Code prompt
+ * so the user can self-serve a fix without filing a GitHub issue or waiting.
+ * Inline to avoid a build-time dep on src/platform.ts.
+ */
+function printWindowsHandoff(what: string, err?: string, file?: string): void {
+  console.log();
+  console.log(`  ${c.yellow}We couldn't finish this step on your machine. Open Claude Code here${c.reset}`);
+  console.log(`  ${c.yellow}and let it patch the repo for you:${c.reset}`);
+  console.log();
+  console.log(`  ${c.bold}1.${c.reset} Install Claude Code: ${c.cyan}https://claude.ai/code${c.reset}`);
+  console.log(`  ${c.bold}2.${c.reset} Open a terminal in: ${c.cyan}${PROJECT_ROOT}${c.reset}`);
+  console.log(`  ${c.bold}3.${c.reset} Run: ${c.cyan}claude${c.reset}`);
+  console.log(`  ${c.bold}4.${c.reset} Paste this prompt:`);
+  console.log();
+  console.log(`  ${c.gray}─────────────────────────────────────────────${c.reset}`);
+  console.log(`  ${c.white}I'm running ClaudeClaw on Windows. ${what} failed.${c.reset}`);
+  if (err) console.log(`  ${c.white}The error was: ${err}${c.reset}`);
+  if (file) console.log(`  ${c.white}Start by reading ${file} and adapt it to my machine.${c.reset}`);
+  else console.log(`  ${c.white}Adapt the Windows paths in this repo to work on my machine.${c.reset}`);
+  console.log(`  ${c.white}Verify by running the failing step again.${c.reset}`);
+  console.log(`  ${c.gray}─────────────────────────────────────────────${c.reset}`);
+  console.log();
+}
+
 function expandHome(p: string): string {
   if (p.startsWith('~/') || p === '~') return path.join(os.homedir(), p.slice(1));
   return p;
@@ -35,7 +60,7 @@ function loadBanner(): string {
   try {
     return fs.readFileSync(path.join(PROJECT_ROOT, 'banner.txt'), 'utf-8');
   } catch {
-    return '\n  LeonClaw\n';
+    return '\n  ClaudeClaw\n';
   }
 }
 
@@ -146,22 +171,30 @@ async function validateBotToken(token: string): Promise<{ valid: boolean; userna
 
 const PLATFORM = process.platform;
 
+function isWSL(): boolean {
+  if (PLATFORM !== 'linux') return false;
+  try {
+    const rel = fs.readFileSync('/proc/sys/kernel/osrelease', 'utf-8');
+    return /microsoft/i.test(rel);
+  } catch { return false; }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
 
   // ── 1. Banner + intro ────────────────────────────────────────────────────
   console.log(`${c.cyan}${c.bold}${loadBanner()}${c.reset}`);
-  console.log(`  ${c.bold}Welcome to LeonClaw.${c.reset}`);
+  console.log(`  ${c.bold}Welcome to ClaudeClaw.${c.reset}`);
   console.log();
   info('This wizard will get you set up in about 5 minutes.');
   info('Press Ctrl+C at any time to exit. You can re-run this at any time with: npm run setup');
   console.log();
 
-  // ── 2. What is LeonClaw ────────────────────────────────────────────────
-  section('What is LeonClaw?');
+  // ── 2. What is ClaudeClaw ────────────────────────────────────────────────
+  section('What is ClaudeClaw?');
 
-  console.log(`  LeonClaw bridges your Claude Code CLI to Telegram.`);
-  console.log(`  You message your bot from your phone. LeonClaw runs the`);
+  console.log(`  ClaudeClaw bridges your Claude Code CLI to Telegram.`);
+  console.log(`  You message your bot from your phone. ClaudeClaw runs the`);
   console.log(`  ${c.bold}actual${c.reset} ${c.cyan}claude${c.reset} CLI on your computer — with all your skills,`);
   console.log(`  tools, and context — and sends the result back to you.`);
   console.log();
@@ -179,12 +212,12 @@ async function main() {
   console.log(`  ${c.bold}FAQ${c.reset}`);
   console.log();
   console.log(`  ${c.cyan}Q:${c.reset} Does this cost anything?`);
-  info('LeonClaw itself is free. You need a Claude Code subscription (Max plan)');
+  info('ClaudeClaw itself is free. You need a Claude Code subscription (Max plan)');
   info('or an Anthropic API key. Optional features (voice, video) have their own');
   info('free tiers. Nothing is billed without your API keys.');
   console.log();
   console.log(`  ${c.cyan}Q:${c.reset} Does my computer need to stay on?`);
-  info('Yes. LeonClaw runs on your machine. When your computer sleeps or shuts');
+  info('Yes. ClaudeClaw runs on your machine. When your computer sleeps or shuts');
   info('down, the bot goes offline. Messages queue in Telegram and arrive when');
   info('you restart.');
   console.log();
@@ -207,6 +240,30 @@ async function main() {
 
   // ── 3. System checks ─────────────────────────────────────────────────────
   section('System checks');
+
+  // Early Windows note. The user can still continue, but WSL2 is smoother.
+  if (PLATFORM === 'win32') {
+    warn('Native Windows detected.');
+    info('Native Windows is supported (Task Scheduler for auto-start), but WSL2');
+    info('is the smoother path: most community skills, launchd parity, and the');
+    info('Python voice stack assume a POSIX environment.');
+    console.log();
+    const continueNative = await confirm('Continue with native Windows? (say "n" to exit and switch to WSL2)', true);
+    if (!continueNative) {
+      console.log();
+      info('To switch to WSL2:');
+      info('  1. Open PowerShell as Administrator');
+      console.log(`  ${c.cyan}  wsl --install -d Ubuntu${c.reset}`);
+      info('  2. Reboot, open the Ubuntu terminal');
+      info('  3. Re-clone ClaudeClaw inside the Ubuntu filesystem (NOT /mnt/c)');
+      info('  4. Run "npm run setup" from the new clone');
+      process.exit(0);
+    }
+  }
+  if (isWSL()) {
+    ok('WSL2 detected. Treating as Linux; systemd services will be used for auto-start.');
+    console.log();
+  }
 
   // Node
   const nodeMajor = parseInt(process.version.slice(1).split('.')[0], 10);
@@ -298,7 +355,7 @@ async function main() {
   // ── 4. What do you want to enable? ──────────────────────────────────────
   section('Choose your features');
 
-  info('LeonClaw OS has several optional features. Tell us what you want.');
+  info('ClaudeClaw OS has several optional features. Tell us what you want.');
   info('You can always add more later by editing .env and restarting.');
   console.log();
 
@@ -315,7 +372,7 @@ async function main() {
     console.log();
     console.log(`  ${c.bold}How the WhatsApp bridge works:${c.reset}`);
     console.log();
-    info('LeonClaw uses whatsapp-web.js to connect to your existing WhatsApp');
+    info('ClaudeClaw uses whatsapp-web.js to connect to your existing WhatsApp');
     info('account via the Linked Devices feature (same as WhatsApp Web).');
     console.log();
     info('A separate process (wa-daemon) runs in the background:');
@@ -503,20 +560,9 @@ async function main() {
     ok(`Created ${claudeclawConfigDir}`);
   }
 
-  // Ensure CLAUDE.md exists for the main agent. Preferred location is
-  // ${CLAUDECLAW_CONFIG}/agents/main/CLAUDE.md (same pattern as sub-agents).
-  // The legacy ${CLAUDECLAW_CONFIG}/CLAUDE.md still loads as a fallback — if
-  // an existing install has it there, leave it alone.
-  const legacyClaudeMd = path.join(claudeclawConfigDir, 'CLAUDE.md');
-  const mainAgentDir = path.join(claudeclawConfigDir, 'agents', 'main');
-  const claudeMdDest = path.join(mainAgentDir, 'CLAUDE.md');
-
-  if (fs.existsSync(claudeMdDest)) {
-    ok(`CLAUDE.md exists at ${claudeMdDest}`);
-  } else if (fs.existsSync(legacyClaudeMd)) {
-    ok(`CLAUDE.md exists at ${legacyClaudeMd} (legacy location — still works)`);
-  } else {
-    fs.mkdirSync(mainAgentDir, { recursive: true });
+  // Ensure CLAUDE.md exists in the config dir (copy from example if needed)
+  const claudeMdDest = path.join(claudeclawConfigDir, 'CLAUDE.md');
+  if (!fs.existsSync(claudeMdDest)) {
     const exampleSrc = path.join(PROJECT_ROOT, 'CLAUDE.md.example');
     if (fs.existsSync(exampleSrc)) {
       fs.copyFileSync(exampleSrc, claudeMdDest);
@@ -524,8 +570,9 @@ async function main() {
     } else {
       warn(`No CLAUDE.md.example found — create ${claudeMdDest} manually`);
     }
+  } else {
+    ok(`CLAUDE.md exists at ${claudeMdDest}`);
   }
-  const effectiveClaudeMd = fs.existsSync(claudeMdDest) ? claudeMdDest : legacyClaudeMd;
 
   // ── 6b. CLAUDE.md personalization ────────────────────────────────────────
   section('Personalize your assistant (CLAUDE.md)');
@@ -543,7 +590,7 @@ async function main() {
   console.log();
   console.log(`  ${c.bold}Your CLAUDE.md is here:${c.reset}`);
   console.log();
-  console.log(`  ${c.cyan}${effectiveClaudeMd}${c.reset}`);
+  console.log(`  ${c.cyan}${claudeMdDest}${c.reset}`);
   console.log();
   info('You can edit it in any text editor, or just start the bot and ask');
   info('Claude to update your CLAUDE.md for you. It has full access to the file.');
@@ -553,7 +600,7 @@ async function main() {
   // ── 7. Skills to install ─────────────────────────────────────────────────
   section('Skills you might want');
 
-  info('LeonClaw auto-loads every skill in ~/.claude/skills/.');
+  info('ClaudeClaw auto-loads every skill in ~/.claude/skills/.');
   info('Here are the most useful ones to install:');
   console.log();
 
@@ -568,7 +615,7 @@ async function main() {
   if (wantVideo) {
     console.log(`  ${c.bold}Gemini skill (required for video analysis):${c.reset}`);
     console.log();
-    info('LeonClaw\'s video analysis uses the gemini-api-dev skill from Google.');
+    info('ClaudeClaw\'s video analysis uses the gemini-api-dev skill from Google.');
     info('It handles text, images, audio, video, function calling, and structured output.');
     info('Install it from: https://github.com/google-gemini/gemini-skills');
     console.log();
@@ -676,7 +723,7 @@ async function main() {
   // ── 9. Security ──────────────────────────────────────────────────────────
   section('Secure your bot');
 
-  info('LeonClaw has full access to your machine. If someone gets into');
+  info('ClaudeClaw has full access to your machine. If someone gets into');
   info('your Telegram account, they control the bot. These layers protect you.');
   console.log();
 
@@ -808,7 +855,7 @@ async function main() {
   // ── 11. Optional Claude API key ───────────────────────────────────────────
   section('Claude authentication');
 
-  info('By default, LeonClaw uses your existing claude login (Max plan).');
+  info('By default, ClaudeClaw uses your existing claude login (Max plan).');
   info('This is fine for personal use on your own machine.');
   console.log();
   info('Set an API key if you\'re deploying on a server, or want pay-per-token');
@@ -828,7 +875,7 @@ async function main() {
   await sleep(300);
 
   const lines = [
-    '# LeonClaw — generated by setup wizard',
+    '# ClaudeClaw — generated by setup wizard',
     '# Edit freely. Re-run: npm run setup',
     '',
     '# ── Required ──────────────────────────────────────────────────',
@@ -884,9 +931,12 @@ async function main() {
   if (PLATFORM === 'darwin') {
     await setupMacOS();
   } else if (PLATFORM === 'linux') {
+    if (isWSL()) {
+      ok('WSL2 detected. Using systemd user services (keep the Ubuntu terminal open or enable WSL2 systemd).');
+    }
     await setupLinux();
   } else if (PLATFORM === 'win32') {
-    setupWindows();
+    await setupWindows();
   } else {
     section('Auto-start');
     info('Unknown platform. Start manually: npm start');
@@ -921,7 +971,7 @@ async function main() {
   // ── 15. Multi-agent setup (optional) ────────────────────────────────────
   section('Agent team (optional)');
 
-  info('LeonClaw can run specialist agents alongside the main bot.');
+  info('ClaudeClaw can run specialist agents alongside the main bot.');
   info('Each agent is its own Telegram bot with a focused role, its own');
   info('context window, and its own chat on your phone.');
   console.log();
@@ -1111,7 +1161,7 @@ async function main() {
   // ── 16. Summary ───────────────────────────────────────────────────────────
   console.log();
   console.log(`  ${c.cyan}╔════════════════════════════════════════════╗${c.reset}`);
-  console.log(`  ${c.cyan}║${c.reset}${c.bold}           LeonClaw is ready!             ${c.reset}${c.cyan}║${c.reset}`);
+  console.log(`  ${c.cyan}║${c.reset}${c.bold}           ClaudeClaw is ready!             ${c.reset}${c.cyan}║${c.reset}`);
   console.log(`  ${c.cyan}╚════════════════════════════════════════════╝${c.reset}`);
   console.log();
 
@@ -1141,7 +1191,7 @@ async function main() {
     } else {
       ok('Build complete');
       console.log();
-      info('Starting LeonClaw... (press Ctrl+C to stop)');
+      info('Starting ClaudeClaw... (press Ctrl+C to stop)');
       console.log();
       // Close readline before handing off to the bot process
       rl.close();
@@ -1168,8 +1218,6 @@ async function main() {
   } else if (PLATFORM === 'linux') {
     info('Logs: journalctl --user -u claudeclaw -f');
   }
-  console.log();
-  info(`Prefer Signal instead of Telegram? Set ${c.cyan}MESSENGER_TYPE=signal${c.reset} in .env and follow ${c.cyan}docs/messengers/signal.md${c.reset}.`);
   console.log();
 }
 
@@ -1242,7 +1290,7 @@ async function setupLinux() {
     const serviceDir = path.join(os.homedir(), '.config', 'systemd', 'user');
     const servicePath = path.join(serviceDir, 'claudeclaw.service');
     const service = `[Unit]
-Description=LeonClaw Telegram Bot
+Description=ClaudeClaw Telegram Bot
 After=network.target
 
 [Service]
@@ -1273,20 +1321,79 @@ WantedBy=default.target
 }
 
 // ── Platform: Windows ────────────────────────────────────────────────────────
-function setupWindows() {
+async function setupWindows() {
   section('Auto-start (Windows)');
 
-  warn('Windows detected.');
+  warn('Windows detected. WSL2 is the smoother path, but native works too.');
   console.log();
-  info('Option A — WSL2 (recommended):');
-  info('  Install WSL2, clone LeonClaw inside the WSL2 filesystem,');
-  info('  and re-run setup. Keep ~/.claude/ inside WSL2, not the Windows mount.');
+  info('A: WSL2 (recommended if you haven\'t started yet).');
+  info('  Run "wsl --install -d Ubuntu" in an elevated PowerShell, reboot,');
+  info('  clone ClaudeClaw inside the Ubuntu filesystem (not /mnt/c), and');
+  info('  re-run this setup from inside WSL2. Keep ~/.claude/ inside WSL2.');
   console.log();
-  info('Option B — PM2 (native Windows):');
-  console.log(`  ${c.cyan}npm install -g pm2${c.reset}`);
-  console.log(`  ${c.cyan}pm2 start dist/index.js --name claudeclaw${c.reset}`);
-  console.log(`  ${c.cyan}pm2 save${c.reset}`);
-  console.log(`  ${c.cyan}pm2 startup${c.reset}  ${c.gray}# follow the instructions it prints${c.reset}`);
+  info('B: Native Windows (Task Scheduler).');
+  info('  Registers a per-user scheduled task that runs at logon.');
+  info('  No admin rights needed. Logs go to logs\\main.log.');
+  console.log();
+
+  const installNative = await confirm('Install the native Windows auto-start task now?', false);
+  if (!installNative) {
+    info('Skipped. You can start the bot manually with: npm start');
+    info('Or re-run "npm run setup" later to install the service.');
+    return;
+  }
+
+  const s = spinner('Registering Windows scheduled task...');
+  try {
+    const winDir = path.join(PROJECT_ROOT, 'win');
+    fs.mkdirSync(winDir, { recursive: true });
+
+    const label = 'com.claudeclaw.main';
+    const batPath = path.join(winDir, `${label}.bat`);
+    const entry = path.join(PROJECT_ROOT, 'dist', 'index.js');
+    const logsDir = path.join(PROJECT_ROOT, 'logs');
+    const logFile = path.join(logsDir, 'main.log');
+
+    const q = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const bat = `@echo off\r
+REM ClaudeClaw main bot wrapper\r
+set NODE_ENV=production\r
+cd /d ${q(PROJECT_ROOT)}\r
+if not exist ${q(logsDir)} mkdir ${q(logsDir)}\r
+${q(process.execPath)} ${q(entry)} >> ${q(logFile)} 2>&1\r
+`;
+    fs.writeFileSync(batPath, bat, 'utf-8');
+
+    // Delete any prior registration idempotently
+    try { execSync(`schtasks /Delete /TN "${label}" /F`, { stdio: 'ignore' }); } catch { /* not registered */ }
+
+    // Register the task (runs on logon, interactive user context)
+    execSync(
+      `schtasks /Create /SC ONLOGON /TN "${label}" /TR "\\"${batPath}\\"" /F /IT`,
+      { stdio: 'pipe' },
+    );
+    // Kick it off now so the bot comes online without a reboot.
+    execSync(`schtasks /Run /TN "${label}"`, { stdio: 'pipe' });
+    s.stop('ok', `Scheduled task installed: ${label}`);
+
+    console.log();
+    info(`Manage it from:`);
+    console.log(`  ${c.cyan}schtasks /Query /TN "${label}"${c.reset}`);
+    console.log(`  ${c.cyan}schtasks /End /TN "${label}"${c.reset}     ${c.gray}# stop${c.reset}`);
+    console.log(`  ${c.cyan}schtasks /Run /TN "${label}"${c.reset}     ${c.gray}# start${c.reset}`);
+    console.log(`  ${c.cyan}schtasks /Delete /TN "${label}" /F${c.reset}  ${c.gray}# uninstall${c.reset}`);
+    console.log();
+    info(`Logs: ${logFile}`);
+  } catch (err) {
+    s.stop('warn', 'Could not register scheduled task automatically');
+    const errMsg = err instanceof Error ? err.message : String(err);
+    printWindowsHandoff('Installing the ClaudeClaw auto-start scheduled task', errMsg, 'scripts/setup.ts (setupWindows function)');
+    info('Quick manual fallback if you prefer: start with "npm start" in a terminal,');
+    info('or use PM2:');
+    console.log(`  ${c.cyan}npm install -g pm2${c.reset}`);
+    console.log(`  ${c.cyan}pm2 start dist/index.js --name claudeclaw${c.reset}`);
+    console.log(`  ${c.cyan}pm2 save && pm2 startup${c.reset}`);
+  }
 }
 
 main()
